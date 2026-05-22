@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 db/amt.db
 *.db
+db/chroma/
+flask.log
+flask_err.log

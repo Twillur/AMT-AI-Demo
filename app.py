@@ -4,18 +4,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ── LangSmith tracing (auto-traces all LangChain calls) ──────────────────────
+if os.getenv("LANGCHAIN_API_KEY") and os.getenv("LANGCHAIN_API_KEY") != "PASTE_YOUR_LANGSMITH_KEY_HERE":
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "AMT-Demo")
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "amt-demo-2026")
 
-from agents import sales, distribution, finance, service
+from agents import langgraph_flow
 from agents.db_utils import query
 
-AGENTS = {
-    "sales": sales,
-    "distribution": distribution,
-    "finance": finance,
-    "service": service,
-}
 
 def get_stats():
     sales_stats = {
@@ -40,9 +39,11 @@ def get_stats():
     }
     return {"sales": sales_stats, "distribution": dist_stats, "finance": fin_stats, "service": svc_stats}
 
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -52,16 +53,14 @@ def chat():
 
     if not message:
         return jsonify({"error": "No message provided"}), 400
-
-    agent = AGENTS.get(department)
-    if not agent:
+    if department not in ("sales", "distribution", "finance", "service"):
         return jsonify({"error": "Unknown department"}), 400
 
     history_key = f"history_{department}"
     history = session.get(history_key, [])
 
     try:
-        response_text = agent.run(message, history)
+        response_text, tools_used = langgraph_flow.run(department, message, history)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -71,11 +70,13 @@ def chat():
         history = history[-20:]
     session[history_key] = history
 
-    return jsonify({"response": response_text})
+    return jsonify({"response": response_text, "tools": tools_used})
+
 
 @app.route("/api/stats")
 def stats():
     return jsonify(get_stats())
+
 
 @app.route("/api/reset", methods=["POST"])
 def reset():
@@ -86,6 +87,7 @@ def reset():
     else:
         session.clear()
     return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

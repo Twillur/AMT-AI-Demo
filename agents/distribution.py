@@ -1,6 +1,8 @@
 import os, json
 from openai import OpenAI
 from .db_utils import query
+from . import trace
+from .vector_store import lc_semantic_search
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -8,12 +10,41 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "semantic_catalog_search",
+            "description": "AI-powered semantic search over AMT's product catalog. Use to find products by type or use case when checking what's in transit or low stock.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "top_k": {"type": "integer"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_shipments",
-            "description": "Get current shipment status. Filter by status or supplier.",
+            "description": "Get inbound shipment status from suppliers. Filter by status or supplier name.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "status": {"type": "string", "description": "Filter by: ordered/in_transit/customs/delivered/delayed. Leave empty for all."},
+                    "supplier": {"type": "string", "description": "Filter by supplier name. Leave empty for all."}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_purchase_orders",
+            "description": "Get open or recent purchase orders sent to suppliers. Shows PO status, supplier, total value, and expected delivery.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "description": "Filter by: open/partial/received/cancelled. Leave empty for all."},
                     "supplier": {"type": "string", "description": "Filter by supplier name. Leave empty for all."}
                 }
             }
@@ -37,20 +68,22 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_pending_orders",
-            "description": "Get orders that are pending or confirmed but not yet shipped.",
+            "description": "Get sales orders that are confirmed but not yet shipped or delivered.",
             "parameters": {"type": "object", "properties": {}}
         }
     }
 ]
 
+
 def get_shipments(status: str = None, supplier: str = None) -> list:
+    trace.log("get_shipments", "SQLite", f"Shipments query — status: {status or 'all'}")
     sql = """
-        SELECT s.shipment_ref, s.supplier, s.origin_country, s.eta, s.status,
+        SELECT s.shipment_ref, s.supplier, s.origin_country,
+               s.shipped_date, s.eta, s.status,
                s.carrier, s.tracking_number, s.notes,
-               o.order_ref, c.name AS customer, c.company
+               po.po_ref, po.total_usd
         FROM shipments s
-        JOIN orders o ON o.id = s.order_id
-        JOIN customers c ON c.id = o.customer_id
+        LEFT JOIN purchase_orders po ON po.id = s.order_id
         WHERE 1=1
     """
     params = []
@@ -63,7 +96,33 @@ def get_shipments(status: str = None, supplier: str = None) -> list:
     sql += " ORDER BY s.eta"
     return query(sql, tuple(params))
 
+
+def get_purchase_orders(status: str = None, supplier: str = None) -> list:
+    trace.log("get_purchase_orders", "SQLite", f"PO query — status: {status or 'all'}")
+    sql = """
+        SELECT po.po_ref, sup.name AS supplier, sup.country,
+               po.order_date, po.expected_delivery, po.status,
+               po.total_usd, po.currency, po.notes,
+               COUNT(poi.id) AS line_items,
+               SUM(poi.qty_ordered) AS total_units
+        FROM purchase_orders po
+        JOIN suppliers sup ON sup.id = po.supplier_id
+        LEFT JOIN purchase_order_items poi ON poi.po_id = po.id
+        WHERE 1=1
+    """
+    params = []
+    if status:
+        sql += " AND po.status = ?"
+        params.append(status)
+    if supplier:
+        sql += " AND sup.name LIKE ?"
+        params.append(f"%{supplier}%")
+    sql += " GROUP BY po.id ORDER BY po.order_date DESC"
+    return query(sql, tuple(params))
+
+
 def get_inventory_levels(category: str = None, low_stock_only: bool = False) -> list:
+    trace.log("get_inventory_levels", "SQLite", f"Inventory — category: {category or 'all'}, low_stock: {low_stock_only}")
     sql = """
         SELECT p.sku, p.brand, p.model, p.category,
                i.qty_on_hand, i.qty_reserved,
@@ -80,7 +139,9 @@ def get_inventory_levels(category: str = None, low_stock_only: bool = False) -> 
     sql += " ORDER BY qty_available ASC"
     return query(sql, tuple(params))
 
+
 def get_pending_orders() -> list:
+    trace.log("get_pending_orders", "SQLite", "Pending & confirmed orders")
     return query("""
         SELECT o.order_ref, c.name, c.company, c.country,
                o.order_date, o.status, o.total_aed, o.sales_rep
@@ -89,13 +150,16 @@ def get_pending_orders() -> list:
         ORDER BY o.order_date
     """)
 
+
 TOOL_MAP = {
+    "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "get_shipments": get_shipments,
+    "get_purchase_orders": get_purchase_orders,
     "get_inventory_levels": get_inventory_levels,
     "get_pending_orders": get_pending_orders,
 }
 
-SYSTEM = """You are an AI assistant for AMT's distribution and logistics team. AMT ships professional AV equipment across UAE, Saudi Arabia, Egypt, and the wider MENA region from its Al Quoz warehouse in Dubai.
+SYSTEM = """You are an AI assistant for AMT's distribution and logistics team. AMT ships professional AV equipment across UAE, Saudi Arabia, Egypt, and the wider MENA region from its Jebel Ali warehouse in Dubai.
 
 You have live access to AMT's inventory, shipment tracking, and order status.
 

@@ -2,10 +2,27 @@ import os, json
 from openai import OpenAI
 from datetime import datetime
 from .db_utils import query, execute
+from . import trace
+from .vector_store import lc_semantic_search
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "semantic_catalog_search",
+            "description": "AI-powered semantic search over AMT's product catalog. Use to identify products when customer describes a device without the exact model name.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "top_k": {"type": "integer"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
     {
         "type": "function",
         "function": {
@@ -69,7 +86,9 @@ TOOLS = [
     }
 ]
 
+
 def get_service_tickets(status: str = None) -> list:
+    trace.log("get_service_tickets", "SQLite", f"Tickets — status: {status or 'all open'}")
     sql = """
         SELECT t.ticket_ref, c.name, c.company, p.brand, p.model,
                t.serial_number, t.issue_description, t.status,
@@ -89,7 +108,9 @@ def get_service_tickets(status: str = None) -> list:
     sql += " ORDER BY t.received_date"
     return query(sql, tuple(params))
 
+
 def get_ticket_by_customer(customer_name: str) -> list:
+    trace.log("get_ticket_by_customer", "SQLite", f"Tickets for: '{customer_name}'")
     return query("""
         SELECT t.ticket_ref, c.name, c.company, p.brand, p.model,
                t.issue_description, t.status, t.warranty_status,
@@ -101,14 +122,21 @@ def get_ticket_by_customer(customer_name: str) -> list:
         ORDER BY t.received_date DESC
     """, (f"%{customer_name}%", f"%{customer_name}%"))
 
+
 def create_service_ticket(customer_name: str, product_model: str,
                           issue_description: str, serial_number: str = None,
                           warranty_status: str = "in_warranty") -> dict:
+    trace.log("create_service_ticket", "SQLite", f"New ticket: {customer_name} — {product_model}")
     customer = query("SELECT id FROM customers WHERE name LIKE ? LIMIT 1", (f"%{customer_name}%",))
     product = query("SELECT id FROM products WHERE model LIKE ? LIMIT 1", (f"%{product_model}%",))
 
     if not customer:
-        cust_id = execute("INSERT INTO customers (name, account_type) VALUES (?, 'retail')", (customer_name,))
+        cust_count = query("SELECT COUNT(*) AS cnt FROM customers")[0]["cnt"] + 1
+        cust_code = f"CUST-WALK-{cust_count:03d}"
+        cust_id = execute(
+            "INSERT INTO customers (customer_code, name, account_type, country) VALUES (?, ?, 'retail', 'UAE')",
+            (cust_code, customer_name)
+        )
     else:
         cust_id = customer[0]["id"]
 
@@ -131,7 +159,9 @@ def create_service_ticket(customer_name: str, product_model: str,
     return {"ticket_ref": ticket_ref, "status": "created", "customer": customer_name,
             "product": product_model, "received_date": today}
 
+
 def update_ticket_status(ticket_ref: str, new_status: str, notes: str = None) -> dict:
+    trace.log("update_ticket_status", "SQLite", f"Update {ticket_ref} → {new_status}")
     sql = "UPDATE service_tickets SET status = ?"
     params = [new_status]
     if notes:
@@ -142,7 +172,9 @@ def update_ticket_status(ticket_ref: str, new_status: str, notes: str = None) ->
     execute(sql, tuple(params))
     return {"ticket_ref": ticket_ref, "new_status": new_status, "updated": True}
 
+
 TOOL_MAP = {
+    "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "get_service_tickets": get_service_tickets,
     "get_ticket_by_customer": get_ticket_by_customer,
     "create_service_ticket": create_service_ticket,

@@ -1,10 +1,27 @@
 import os, json
 from openai import OpenAI
 from .db_utils import query
+from . import trace
+from .vector_store import lc_semantic_search
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "semantic_catalog_search",
+            "description": "AI-powered semantic search over AMT's full product catalog. Use this for conceptual queries like 'best camera for broadcast', 'lightweight drone options', 'professional audio kit'. Returns ranked products with descriptions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language product search query"},
+                    "top_k": {"type": "integer", "description": "Number of results (default 5, max 10)"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
     {
         "type": "function",
         "function": {
@@ -50,7 +67,9 @@ TOOLS = [
     }
 ]
 
+
 def search_products(keyword: str, max_price_aed: float = None) -> list:
+    trace.log("search_products", "SQLite", f"Keyword search: '{keyword}'")
     sql = """
         SELECT p.sku, p.brand, p.model, p.category, p.price_aed, i.qty_on_hand
         FROM products p
@@ -64,7 +83,9 @@ def search_products(keyword: str, max_price_aed: float = None) -> list:
         params.append(max_price_aed)
     return query(sql, tuple(params))
 
+
 def get_customer_orders(customer_name: str) -> list:
+    trace.log("get_customer_orders", "SQLite", f"Orders for: '{customer_name}'")
     return query("""
         SELECT o.order_ref, c.name, c.company, o.order_date, o.status, o.total_aed, o.sales_rep
         FROM orders o JOIN customers c ON c.id = o.customer_id
@@ -72,7 +93,9 @@ def get_customer_orders(customer_name: str) -> list:
         ORDER BY o.order_date DESC
     """, (f"%{customer_name}%", f"%{customer_name}%"))
 
+
 def get_stock_level(product: str) -> list:
+    trace.log("get_stock_level", "SQLite", f"Stock check: '{product}'")
     return query("""
         SELECT p.sku, p.brand, p.model, i.qty_on_hand, i.qty_reserved,
                (i.qty_on_hand - i.qty_reserved) AS qty_available
@@ -80,7 +103,9 @@ def get_stock_level(product: str) -> list:
         WHERE p.sku LIKE ? OR p.model LIKE ?
     """, (f"%{product}%", f"%{product}%"))
 
+
 TOOL_MAP = {
+    "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "search_products": search_products,
     "get_customer_orders": get_customer_orders,
     "get_stock_level": get_stock_level,
@@ -88,7 +113,7 @@ TOOL_MAP = {
 
 SYSTEM = """You are an AI sales assistant for Advanced Media Trading (AMT), the largest professional AV equipment distributor in MENA. AMT represents 100+ brands including DJI, Sony Professional, RED, ARRI, Zeiss, Sennheiser, Profoto, Atomos, and Teradek.
 
-You have access to AMT's live product catalog, inventory, and customer order history.
+You have access to AMT's live product catalog, inventory, and customer order history. Use semantic_catalog_search for broad product discovery, search_products for specific keyword/brand lookups, and get_stock_level to confirm availability.
 
 Your job:
 - Build detailed quotes and BOMs for client projects

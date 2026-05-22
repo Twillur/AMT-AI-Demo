@@ -8,13 +8,13 @@ Built as a live internal demo to show non-technical department heads exactly how
 
 ## What It Does
 
-Four department-specific AI agents, each connected to a live database of realistic AMT data:
+Four department-specific AI agents, each connected to a live SAP-aligned database of realistic AMT data:
 
 | Department | What the AI can do |
 |---|---|
-| **Sales** | Build equipment quotes, check stock, pull customer order history |
-| **Distribution** | Track inbound shipments, flag delays & customs holds, monitor inventory |
-| **Finance** | Show overdue invoices, summarize revenue, check customer balances |
+| **Sales** | Build equipment quotes, check stock, pull customer order history, semantic product search |
+| **Distribution** | Track inbound shipments, monitor purchase orders, flag delays & customs holds, inventory levels |
+| **Finance** | Overdue invoices, revenue summaries, aging reports, customer balances, Pandas analytics |
 | **Service** | View open repair tickets, log new ones, update status, draft customer emails |
 
 Every response is grounded in real data — the AI queries the database, it doesn't hallucinate.
@@ -23,10 +23,17 @@ Every response is grounded in real data — the AI queries the database, it does
 
 ## Stack
 
-- **Backend:** Python + Flask
-- **AI:** GPT-4o with function calling (tool use)
-- **Database:** SQLite with realistic AMT sample data
-- **Frontend:** Custom HTML/CSS/JS chat interface with per-department theming
+| Layer | Technology |
+|---|---|
+| **Orchestration** | LangGraph (StateGraph routing to department agents) |
+| **LLM** | GPT-4o via OpenAI function calling |
+| **Semantic Search** | LlamaIndex + ChromaDB (40-product vector store) |
+| **Tool Dispatch** | LangChain StructuredTool |
+| **Financial Analysis** | Pandas (aging reports, payment rates, monthly trends) |
+| **Observability** | LangSmith (full trace of every agent run) |
+| **Database** | SQLite — SAP SD/MM/FI/CS aligned schema (20+ tables) |
+| **Backend** | Python + Flask |
+| **Frontend** | Custom HTML/CSS/JS with per-department theming + live tool trace |
 
 ---
 
@@ -34,39 +41,48 @@ Every response is grounded in real data — the AI queries the database, it does
 
 ```
 AMT_Demo/
-├── app.py                  # Flask server + session-based chat history
+├── app.py                      # Flask server, LangSmith init, session history
 ├── requirements.txt
-├── .env                    # API keys (not committed)
+├── .env                        # API keys (not committed)
 │
 ├── agents/
-│   ├── sales.py            # Product search, quote builder, order history
-│   ├── distribution.py     # Shipment tracker, inventory monitor
-│   ├── finance.py          # Invoice status, revenue summary, balances
-│   └── service.py          # Ticket management, create/update tickets
+│   ├── langgraph_flow.py       # LangGraph StateGraph router (entry point)
+│   ├── trace.py                # Thread-local tool trace (fires per request)
+│   ├── vector_store.py         # LlamaIndex + ChromaDB + LangChain StructuredTool
+│   ├── sales.py                # Product search, quote builder, order history
+│   ├── distribution.py         # Shipments, purchase orders, inventory
+│   ├── finance.py              # Invoices, revenue, Pandas financial reports
+│   └── service.py              # Ticket management, create/update, customer emails
 │
 ├── db/
-│   ├── schema.sql          # 7-table schema (products, inventory, customers,
-│   │                       #   orders, invoices, shipments, service_tickets)
-│   ├── seed.py             # Populates DB with realistic AMT sample data
-│   └── amt.db              # Generated SQLite database (not committed)
+│   ├── schema.sql              # SAP-aligned schema: branches, employees, suppliers,
+│   │                           #   products, inventory, customers, POs, orders,
+│   │                           #   invoices, service_tickets, warranties + more
+│   ├── seed.py                 # Full AMT data: 4 branches, 18 employees, 20 suppliers,
+│   │                           #   42 products, 15 customers, 12 orders, 12 invoices,
+│   │                           #   8 service tickets, 5 warranty registrations
+│   └── amt.db                  # Generated SQLite database (not committed)
 │
 ├── templates/
-│   └── index.html          # Chat UI with department switcher
-│
+│   └── index.html              # Chat UI: department switcher, tech stack bar,
+│                               #          per-message tool trace panel
 └── static/
     └── amt_logo.webp
 ```
 
 ---
 
-## Sample Data Included
+## Sample Data
 
-- **23 products** — DJI, Sony Pro, RED, Zeiss, Sennheiser, Profoto, Atomos, Teradek
-- **10 customers** — MBC Group, Dubai Film Commission, ADNOC, Saudi Broadcasting Corp, and more
-- **10 orders** across delivered, shipped, confirmed, and pending states
-- **10 invoices** — mix of paid, unpaid, and overdue
-- **5 shipments** — from China, USA, Japan, Hong Kong — including a delayed customs hold
-- **6 service tickets** — across all repair stages with real warranty status
+- **4 branches** — Dubai HQ, Al Quoz Warehouse+Service, Riyadh, Cairo
+- **18 employees** — real AMT leadership (Kaveh Farnam, Alaa Al Rantisi, Pooyan Farnam, etc.)
+- **20 suppliers** — DJI, Sony Professional, RED, ARRI, Zeiss, Profoto, Sennheiser, Atomos, Teradek, and more
+- **42 products** — with real HS codes, cost/sell prices, warranty periods
+- **15 customers** — MBC Group, ADNOC, Saudi Broadcasting Authority, Dubai Film Commission, OSN, etc.
+- **12 orders** across delivered, shipped, confirmed, and pending states
+- **12 invoices** — UAE 5% VAT / KSA 15% VAT / Egypt 14% VAT applied correctly
+- **5 inbound shipments** — including one on customs hold
+- **8 service tickets** — Dubai + Riyadh, across all repair stages
 
 ---
 
@@ -90,12 +106,15 @@ source venv/bin/activate     # Mac/Linux
 pip install -r requirements.txt
 ```
 
-**4. Set your API key**
+**4. Set your API keys**
 
 Create a `.env` file in the root:
 ```
 OPENAI_API_KEY=your_openai_key_here
 FLASK_SECRET_KEY=any-random-string
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_PROJECT=AMT-Demo
+LANGCHAIN_API_KEY=your_langsmith_key_here
 ```
 
 **5. Seed the database**
@@ -117,18 +136,22 @@ Open `http://localhost:5000`
 **Sales**
 > "Give me a quote for a 4K cinema shoot kit under AED 80,000"
 > "What's the stock level on DJI Mavic 3 Pro?"
+> "Show me all orders for MBC Group"
 
 **Distribution**
 > "Show me all delayed or customs-held shipments"
+> "What purchase orders are currently open?"
 > "What items are running low on stock?"
 
 **Finance**
 > "Show all overdue invoices"
-> "What's our total revenue and outstanding balance for 2026?"
+> "Run an aging report"
+> "What's our total revenue and collection rate for 2026?"
 
 **Service**
 > "Show me all open repair tickets"
 > "Log a new repair for Rami Yousef — DJI RS 4 Pro, motor overheating"
+> "Draft a customer update email for ticket SVC-2026-001"
 
 ---
 
