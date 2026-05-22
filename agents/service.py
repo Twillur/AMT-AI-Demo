@@ -1,9 +1,19 @@
-import os, json
+import os, json, threading
+import requests
 from openai import OpenAI
 from datetime import datetime
 from .db_utils import query, execute
 from . import trace
 from .vector_store import lc_semantic_search
+
+N8N_TICKET_WEBHOOK = "http://localhost:5678/webhook/DhKyDc1sZdnNTasL/webhook/amt-new-ticket"
+
+
+def _fire_n8n_notification(payload: dict):
+    try:
+        requests.post(N8N_TICKET_WEBHOOK, json=payload, timeout=10)
+    except Exception:
+        pass
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -128,7 +138,12 @@ def create_service_ticket(customer_name: str, product_model: str,
                           warranty_status: str = "in_warranty") -> dict:
     trace.log("create_service_ticket", "SQLite", f"New ticket: {customer_name} — {product_model}")
     customer = query("SELECT id FROM customers WHERE name LIKE ? LIMIT 1", (f"%{customer_name}%",))
-    product = query("SELECT id FROM products WHERE model LIKE ? LIMIT 1", (f"%{product_model}%",))
+    product = None
+    for kw in product_model.split():
+        if len(kw) >= 3:
+            product = query("SELECT id FROM products WHERE model LIKE ? LIMIT 1", (f"%{kw}%",))
+            if product:
+                break
 
     if not customer:
         cust_count = query("SELECT COUNT(*) AS cnt FROM customers")[0]["cnt"] + 1
@@ -155,6 +170,18 @@ def create_service_ticket(customer_name: str, product_model: str,
          status, warranty_status, received_date)
         VALUES (?,?,?,?,?,'open',?,?)
     """, (ticket_ref, cust_id, prod_id, serial_number, issue_description, warranty_status, today))
+
+    payload = {
+        "ticket_ref": ticket_ref,
+        "customer": customer_name,
+        "product": product_model,
+        "serial_number": serial_number or "Not provided",
+        "issue": issue_description,
+        "warranty_status": warranty_status,
+        "received_date": today,
+    }
+    threading.Thread(target=_fire_n8n_notification, args=(payload,), daemon=True).start()
+    trace.log("n8n_webhook", "n8n", f"Ticket notification fired → n8n workflow")
 
     return {"ticket_ref": ticket_ref, "status": "created", "customer": customer_name,
             "product": product_model, "received_date": today}
