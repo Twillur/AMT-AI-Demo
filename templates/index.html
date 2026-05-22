@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMT AI Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { font-family: 'Space Grotesk', system-ui, sans-serif; }
+
+        body {
+            background-color: #09090e;
+            background-image: radial-gradient(circle, #1e1e2a 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* ── Glow vars per dept ─────────────────── */
+        :root {
+            --glow-sales:        #3b7eff;
+            --glow-distribution: #10d97a;
+            --glow-finance:      #9d5eff;
+            --glow-service:      #ff7a2f;
+        }
+
+        /* ── Dept cards ─────────────────────────── */
+        .dept-btn { transition: border-color .2s, background .2s, box-shadow .2s; }
+        .dept-btn:hover { background: rgba(255,255,255,.04); }
+        .dept-btn.active-sales        { border-color: var(--glow-sales);        background: rgba(59,126,255,.08);  box-shadow: 0 0 16px -4px rgba(59,126,255,.3);  }
+        .dept-btn.active-distribution { border-color: var(--glow-distribution); background: rgba(16,217,122,.08);  box-shadow: 0 0 16px -4px rgba(16,217,122,.3);  }
+        .dept-btn.active-finance      { border-color: var(--glow-finance);      background: rgba(157,94,255,.08);  box-shadow: 0 0 16px -4px rgba(157,94,255,.3);  }
+        .dept-btn.active-service      { border-color: var(--glow-service);      background: rgba(255,122,47,.08);  box-shadow: 0 0 16px -4px rgba(255,122,47,.3);  }
+
+        /* ── Dept dot indicator ─────────────────── */
+        .dot-sales        { background: var(--glow-sales); }
+        .dot-distribution { background: var(--glow-distribution); }
+        .dot-finance      { background: var(--glow-finance); }
+        .dot-service      { background: var(--glow-service); }
+
+        /* ── Send button ───────────────────────── */
+        #send-btn {
+            background: linear-gradient(135deg, #f0a500, #e05500);
+            transition: opacity .2s, box-shadow .2s, transform .15s;
+        }
+        #send-btn:hover:not(:disabled) { opacity: .92; box-shadow: 0 0 20px -4px rgba(240,165,0,.5); transform: translateY(-1px); }
+        #send-btn:active { transform: translateY(0); }
+        #send-btn:disabled { opacity: .35; }
+
+        /* ── Input focus glow ──────────────────── */
+        #input:focus { border-color: rgba(240,165,0,.5); box-shadow: 0 0 0 3px rgba(240,165,0,.08); }
+
+        /* ── Message animations ────────────────── */
+        .msg-enter { animation: msgIn .28s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(12px) scale(.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Typing dots ───────────────────────── */
+        .dot { width:6px; height:6px; border-radius:50%; background:#555568; animation:dotPulse 1.3s ease-in-out infinite; }
+        .dot:nth-child(2) { animation-delay:.18s; }
+        .dot:nth-child(3) { animation-delay:.36s; }
+        @keyframes dotPulse {
+            0%,80%,100% { transform:scale(.8); opacity:.4; }
+            40%          { transform:scale(1.2); opacity:1; }
+        }
+
+        /* ── Scenario buttons ──────────────────── */
+        .scenario-btn { transition: background .18s, border-color .18s, transform .15s, color .18s; }
+        .scenario-btn:hover { transform:translateY(-1px); background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2); color:#f2f2f4; }
+        .scenario-btn.scenario-active { background:rgba(255,255,255,.1) !important; border-color:rgba(255,255,255,.28) !important; color:#f2f2f4 !important; }
+
+        /* ── Params panel ──────────────────────── */
+        #params-panel { display:none; }
+        #params-panel.visible { display:block; animation: panelIn .22s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes panelIn {
+            from { opacity:0; transform:translateY(-6px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* ── Param inputs / selects ────────────── */
+        .param-field {
+            background: rgba(14,14,22,.95);
+            border: 1px solid rgba(255,255,255,.1);
+            color: #e8e8f0;
+            border-radius: 8px;
+            font-size: .78rem;
+            padding: 6px 10px;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: border-color .15s, box-shadow .15s;
+            outline: none;
+        }
+        .param-field:focus { border-color: rgba(240,165,0,.45); box-shadow: 0 0 0 3px rgba(240,165,0,.07); }
+        select.param-field option { background: #12121c; }
+        input[type="number"].param-field::-webkit-inner-spin-button,
+        input[type="number"].param-field::-webkit-outer-spin-button { -webkit-appearance:none; }
+        input[type="number"].param-field { -moz-appearance:textfield; }
+
+        /* ── Generate prompt button ────────────── */
+        .gen-btn {
+            background: linear-gradient(135deg, #f0a500, #e05500);
+            transition: opacity .15s, transform .15s, box-shadow .15s;
+        }
+        .gen-btn:hover { opacity:.88; transform:translateY(-1px); box-shadow:0 0 14px -4px rgba(240,165,0,.45); }
+        .gen-btn:active { transform:translateY(0); }
+
+        /* ── Markdown output ───────────────────── */
+        .md-body table  { width:100%; border-collapse:collapse; margin:10px 0; font-size:.8rem; }
+        .md-body th     { background:rgba(240,165,0,.12); padding:8px 12px; text-align:left; border-bottom:1px solid rgba(240,165,0,.25); color:#f0a500; font-weight:600; letter-spacing:.02em; }
+        .md-body td     { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.06); color:#c8c8d8; }
+        .md-body tr:last-child td { border:none; }
+        .md-body strong { color:#f0c040; }
+        .md-body em     { color:#aaaacc; }
+        .md-body ul, .md-body ol { padding-left:1.4rem; margin:8px 0; }
+        .md-body li     { margin:4px 0; font-size:.85rem; color:#c0c0d0; }
+        .md-body p      { margin:6px 0; font-size:.85rem; color:#c0c0d0; line-height:1.65; }
+        .md-body h3     { font-size:.9rem; font-weight:600; color:#f2f2f4; margin:12px 0 4px; }
+        .md-body code   { background:rgba(255,255,255,.08); padding:2px 6px; border-radius:4px; font-size:.78rem; color:#f0c070; }
+        .md-body blockquote { border-left:3px solid rgba(240,165,0,.4); padding-left:12px; color:#888898; font-style:italic; margin:8px 0; }
+
+        /* ── Scrollbar ─────────────────────────── */
+        #messages::-webkit-scrollbar       { width:3px; }
+        #messages::-webkit-scrollbar-track { background:transparent; }
+        #messages::-webkit-scrollbar-thumb { background:#2a2a3a; border-radius:2px; }
+
+        /* ── Glass surfaces ────────────────────── */
+        .glass { background:rgba(16,16,22,.85); backdrop-filter:blur(12px); }
+    </style>
+</head>
+<body class="text-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- ── Header ─────────────────────────────────── -->
+    <header class="glass border-b border-white/[.06] px-5 py-3 flex items-center justify-between flex-shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <div id="logo-wrap" class="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
+                 style="background:#111118; border:1px solid rgba(255,255,255,.08)">
+                <img src="/static/amt_logo.webp" alt="AMT" class="w-full h-full object-contain"
+                     onerror="document.getElementById('logo-wrap').outerHTML='<div class=\'w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-black flex-shrink-0\' style=\'background:linear-gradient(135deg,#f0a500,#e05500);box-shadow:0 0 18px -4px rgba(240,165,0,.5)\'>AMT</div>'" />
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-white tracking-tight leading-tight">AMT AI Assistant</p>
+                <p class="text-xs leading-tight" style="color:#55556a">Advanced Media Trading — Internal Demo</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[.06] bg-white/[.03]">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="box-shadow:0 0 6px #10d97a"></div>
+                <span class="text-xs" style="color:#55556a">GPT-4o</span>
+            </div>
+            <button onclick="clearChat()"
+                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.08] hover:border-white/20 transition-colors"
+                    style="color:#55556a">
+                Clear
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- ── Sidebar ──────────────────────────────── -->
+        <aside class="flex-shrink-0 flex flex-col p-3 gap-1.5 border-r border-white/[.05]"
+               style="width:210px; background:rgba(10,10,16,.6)">
+
+            <p class="text-xs uppercase tracking-widest px-2 mt-1 mb-0.5" style="color:#3a3a52; font-size:.65rem">Department</p>
+
+            <button onclick="setDept('sales')" id="dept-sales"
+                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                         style="background:rgba(59,126,255,.15)">📊</div>
+                    <div>
+                        <p class="text-sm font-medium" style="color:#e8e8f0">Sales</p>
+                        <p class="text-xs" style="color:#44445a">Quotes & Proposals</p>
+                    </div>
+                </div>
+            </button>
+
+            <button onclick="setDept('distribution')" id="dept-distribution"
+                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                         style="background:rgba(16,217,122,.12)">🚚</div>
+                    <div>
+                        <p class="text-sm font-medium" style="color:#e8e8f0">Distribution</p>
+                        <p class="text-xs" style="color:#44445a">Logistics & Shipping</p>
+                    </div>
+                </div>
+            </button>
+
+            <button onclick="setDept('finance')" id="dept-finance"
+                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                         style="background:rgba(157,94,255,.15)">💰</div>
+                    <div>
+                        <p class="text-sm font-medium" style="color:#e8e8f0">Finance</p>
+                        <p class="text-xs" style="color:#44445a">Invoices & VAT</p>
+                    </div>
+                </div>
+            </button>
+
+            <button onclick="setDept('service')" id="dept-service"
+                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
+                         style="background:rgba(255,122,47,.12)">🔧</div>
+                    <div>
+                        <p class="text-sm font-medium" style="color:#e8e8f0">Service</p>
+                        <p class="text-xs" style="color:#44445a">After-Sales & Repairs</p>
+                    </div>
+                </div>
+            </button>
+
+            <div class="mt-auto pt-3 border-t border-white/[.05] text-center">
+                <p class="text-xs" style="color:#2a2a3a; font-size:.65rem">AMT Internal Demo v1.0</p>
+            </div>
+        </aside>
+
+        <!-- ── Main panel ────────────────────────────── -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+
+            <!-- Dept bar + scenarios + params panel -->
+            <div class="glass border-b border-white/[.05] px-5 pt-3 flex-shrink-0">
+                <div class="flex items-center gap-2.5 mb-2.5">
+                    <div id="dept-dot" class="w-2 h-2 rounded-full dot-sales" style="box-shadow:0 0 8px #3b7eff"></div>
+                    <h2 id="dept-title" class="text-sm font-semibold" style="color:#f2f2f4">Sales Department</h2>
+                    <span id="dept-badge"
+                          class="text-xs px-2.5 py-0.5 rounded-full border"
+                          style="background:rgba(59,126,255,.1); color:#6699ff; border-color:rgba(59,126,255,.25)">
+                        Sales
+                    </span>
+                </div>
+                <div id="scenarios" class="flex flex-wrap gap-2 pb-3"></div>
+
+                <!-- Params panel — shown when scenario is selected -->
+                <div id="params-panel">
+                    <div class="border-t border-white/[.06] pt-3 pb-3.5">
+                        <p id="params-label" class="text-xs font-semibold mb-3" style="color:#9898b8"></p>
+                        <div id="params-fields" class="flex flex-wrap gap-3 items-end"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages" class="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+                <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
+                    <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                         style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                    <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
+                         style="background:rgba(20,20,30,.8); border:1px solid rgba(255,255,255,.07)">
+                        <p class="text-sm" style="color:#a0a0b8">Welcome to AMT AI Assistant. Select a department on the left, pick a scenario, fill in the details, and generate a prompt — or type freely below.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="glass border-t border-white/[.05] px-5 py-3.5 flex-shrink-0">
+                <div class="flex gap-3 items-end">
+                    <textarea
+                        id="input"
+                        placeholder="Generate from a scenario above, or type your own request..."
+                        class="flex-1 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none transition-all"
+                        style="background:rgba(20,20,30,.9); border:1px solid rgba(255,255,255,.08); color:#e8e8f0;"
+                        rows="2"
+                        onkeydown="handleKey(event)"
+                    ></textarea>
+                    <button id="send-btn" onclick="sendMessage()"
+                            class="font-semibold text-sm px-5 py-3 rounded-xl text-black flex-shrink-0">
+                        Send →
+                    </button>
+                </div>
+                <p class="text-xs mt-1.5" style="color:#2a2a3a">Enter to send · Shift+Enter for new line</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let currentDept = 'sales';
+    let isLoading = false;
+    let activeScenarioIdx = -1;
+    let currentScenarios = [];
+
+    const deptConfig = {
+        sales: {
+            title: 'Sales Department',
+            badge: 'Sales',
+            badgeStyle: 'background:rgba(59,126,255,.1); color:#6699ff; border-color:rgba(59,126,255,.25)',
+            dotClass: 'dot-sales',
+            dotGlow: 'box-shadow:0 0 8px #3b7eff',
+            activeClass: 'active-sales',
+            scenarios: [
+                {
+                    label: '🎬 Studio Kit Quote',
+                    params: [
+                        { id: 'budget',      label: 'Budget (AED)',  type: 'number', placeholder: '150000' },
+                        { id: 'client_type', label: 'Client Type',   type: 'select', options: ['Broadcast TV', 'Film Production', 'YouTube Creator', 'Corporate Events', 'News Agency'] },
+                        { id: 'kit_focus',   label: 'Kit Focus',     type: 'select', options: ['Full production kit', 'Camera & lenses only', 'Drone & aerial', 'Audio & wireless', 'Studio lighting'] }
+                    ],
+                    template: 'Build a {kit_focus} quote for a {client_type} client with a budget of AED {budget}. Format as a markdown table: Product | Brand | Model | Est. Price (AED) | Notes. Recommend the best combination from AMT\'s portfolio (Sony, DJI, RED, Sennheiser, Profoto, Manfrotto, Atomos, Zeiss). Stay within budget.'
+                },
+                {
+                    label: '📷 Product Comparison',
+                    params: [
+                        { id: 'product1',    label: 'Product 1',     type: 'select', options: ['DJI Inspire 3', 'DJI Matrice 350 RTK', 'Sony FX9', 'Sony Venice 2', 'RED Komodo 6K', 'ARRI ALEXA 35'] },
+                        { id: 'product2',    label: 'Product 2',     type: 'select', options: ['DJI Matrice 350 RTK', 'DJI Inspire 3', 'Sony FX6', 'RED Komodo 6K', 'Blackmagic URSA', 'Canon EOS C70'] },
+                        { id: 'client_use',  label: 'Client Use Case', type: 'select', options: ['Broadcast news', 'Film production', 'Drone inspection', 'Wedding & events', 'Documentary', 'Social media'] }
+                    ],
+                    template: 'Compare {product1} vs {product2} for a {client_use} client. Include: a side-by-side specs table, pros & cons for each, estimated price range in AED, and a clear recommendation with reasoning.'
+                },
+                {
+                    label: '✉️ Client Follow-up',
+                    params: [
+                        { id: 'client_name', label: 'Client Name',       type: 'text',   placeholder: 'e.g. Ahmed Al Rashid' },
+                        { id: 'company',     label: 'Company',            type: 'text',   placeholder: 'e.g. Al Arabiya TV' },
+                        { id: 'product',     label: 'Proposal Topic',     type: 'text',   placeholder: 'e.g. broadcast cameras' },
+                        { id: 'weeks',       label: 'Time Since Proposal', type: 'select', options: ['1 week', '2 weeks', '3 weeks', '1 month'] }
+                    ],
+                    template: 'Draft a professional follow-up email to {client_name} at {company} who has not responded to our {product} proposal in {weeks}. Be polite, add value with a relevant insight, and invite a decision or feedback.'
+                },
+                {
+                    label: '🎥 Creator Package',
+                    params: [
+                        { id: 'budget',   label: 'Budget (AED)', type: 'number', placeholder: '30000' },
+                        { id: 'platform', label: 'Platform',     type: 'select', options: ['YouTube', 'Instagram / TikTok', 'Podcast / Audio', 'Photography'] },
+                        { id: 'focus',    label: 'Priority',     type: 'select', options: ['Balanced full setup', 'Camera + lens first', 'Audio quality first', 'Lighting setup first'] }
+                    ],
+                    template: 'A {platform} content creator has AED {budget} budget. Priority: {focus}. Build a complete quote from AMT\'s brand portfolio (camera, lens, audio, lighting). Format as a table: Product | Brand | Model | Price (AED) | Why it fits. Stay within budget.'
+                }
+            ]
+        },
+        distribution: {
+            title: 'Distribution & Logistics',
+            badge: 'Distribution',
+            badgeStyle: 'background:rgba(16,217,122,.1); color:#22dd88; border-color:rgba(16,217,122,.25)',
+            dotClass: 'dot-distribution',
+            dotGlow: 'box-shadow:0 0 8px #10d97a',
+            activeClass: 'active-distribution',
+            scenarios: [
+                {
+                    label: '📦 Supplier Summary',
+                    params: [
+                        { id: 'email_text', label: 'Paste Supplier Email', type: 'textarea', placeholder: 'Paste the supplier email here...' }
+                    ],
+                    template: 'Extract all key shipment information from this supplier email. Present as a table: Supplier | Items | Order # | Expected Arrival | Status | Action Required. Then list urgent next steps.\n\nEmail:\n{email_text}'
+                },
+                {
+                    label: '🚨 Delay Priority',
+                    params: [
+                        { id: 'item1', label: 'Delayed Shipment 1', type: 'text', placeholder: 'e.g. Sony FX9 x2, client: MBC, 2 weeks late' },
+                        { id: 'item2', label: 'Delayed Shipment 2', type: 'text', placeholder: 'e.g. DJI Inspire 3 x1, client: production house, 1 week late' },
+                        { id: 'item3', label: 'Delayed Shipment 3', type: 'text', placeholder: 'e.g. Profoto B10 x5, client: photo studio, 3 weeks late' }
+                    ],
+                    template: 'Rank these delayed shipments by urgency and recommend action for each:\n1. {item1}\n2. {item2}\n3. {item3}\n\nFor each: priority reason, suggested customer communication, and immediate next step for our logistics team.'
+                },
+                {
+                    label: '📝 Supplier Response',
+                    params: [
+                        { id: 'supplier',       label: 'Supplier',       type: 'text',   placeholder: 'e.g. DJI MENA' },
+                        { id: 'order_details',  label: 'Order Details',  type: 'text',   placeholder: 'e.g. Order #DJI-9901, 8x Inspire 3' },
+                        { id: 'weeks_overdue',  label: 'Weeks Overdue',  type: 'select', options: ['1 week', '2 weeks', '3 weeks', '4+ weeks'] }
+                    ],
+                    template: 'Draft a professional but firm email to {supplier}\'s MENA supply team requesting urgent update on: {order_details} — now {weeks_overdue} overdue. Emphasize impact on our clients and request a firm revised delivery date.'
+                },
+                {
+                    label: '📋 Customs Checklist',
+                    params: [
+                        { id: 'product_type', label: 'Product Type',    type: 'select', options: ['Cinema cameras', 'Commercial drones', 'Professional audio', 'Studio lighting', 'Mixed AV equipment'] },
+                        { id: 'origin',       label: 'Origin Country',  type: 'select', options: ['Japan', 'USA', 'Germany', 'China', 'UK', 'South Korea'] },
+                        { id: 'destination',  label: 'Destination',     type: 'select', options: ['Dubai / UAE', 'Riyadh / Saudi Arabia', 'Cairo / Egypt'] }
+                    ],
+                    template: 'We are importing {product_type} from {origin} into {destination}. Provide a detailed customs checklist: required documents, applicable duties/tariffs, potential inspection requirements, and common pitfalls to avoid.'
+                }
+            ]
+        },
+        finance: {
+            title: 'Finance Department',
+            badge: 'Finance',
+            badgeStyle: 'background:rgba(157,94,255,.1); color:#bb88ff; border-color:rgba(157,94,255,.25)',
+            dotClass: 'dot-finance',
+            dotGlow: 'box-shadow:0 0 8px #9d5eff',
+            activeClass: 'active-finance',
+            scenarios: [
+                {
+                    label: '🧾 Invoice Processor',
+                    params: [
+                        { id: 'supplier',  label: 'Supplier',            type: 'text',   placeholder: 'e.g. Manfrotto Italy' },
+                        { id: 'amount',    label: 'Invoice Total',       type: 'number', placeholder: 'e.g. 24500' },
+                        { id: 'currency',  label: 'Currency',            type: 'select', options: ['EUR', 'USD', 'JPY', 'GBP', 'AED'] },
+                        { id: 'country',   label: 'Destination Country', type: 'select', options: ['UAE (5% VAT)', 'Saudi Arabia (15% VAT)', 'Egypt'] }
+                    ],
+                    template: 'Process this invoice for our {country} books:\nSupplier: {supplier} | Invoice Total: {currency} {amount}\n\nConvert to AED (1 USD=3.67, 1 EUR=4.00, 1 GBP=4.65, 100 JPY=2.45 AED), apply the correct VAT rate, and present the full breakdown in a clean table with all line items.'
+                },
+                {
+                    label: '🇸🇦 KSA VAT',
+                    params: [
+                        { id: 'items',    label: 'Items (brief)',  type: 'text',   placeholder: 'e.g. Sony FX6 x2, Sennheiser EW x4' },
+                        { id: 'subtotal', label: 'Subtotal (AED)', type: 'number', placeholder: 'e.g. 40400' }
+                    ],
+                    template: 'Calculate 15% Saudi VAT for this Riyadh branch shipment:\nItems: {items}\nSubtotal: AED {subtotal}\n\nShow full breakdown as a table: items, subtotal, 15% VAT amount, and total due in AED.'
+                },
+                {
+                    label: '💱 Margin Calculator',
+                    params: [
+                        { id: 'cost_usd', label: 'Supplier Cost (USD)', type: 'number', placeholder: 'e.g. 45000' },
+                        { id: 'cost_eur', label: 'Additional Cost (EUR)', type: 'number', placeholder: '0 if none' },
+                        { id: 'margin',   label: 'Target Margin',       type: 'select', options: ['15%', '20%', '25%', '30%', '35%'] }
+                    ],
+                    template: 'Cost and margin analysis for our finance team:\nSupplier costs: USD {cost_usd} + EUR {cost_eur}\nTarget gross margin: {margin}\n\nStep by step: convert to AED (1 USD=3.67, 1 EUR=4.00), note 5% UAE VAT on import, then calculate minimum selling price to achieve {margin} gross margin. Show all calculations clearly.'
+                },
+                {
+                    label: '📊 Branch Comparison',
+                    params: [
+                        { id: 'dubai',  label: 'Dubai Revenue (AED)', type: 'number', placeholder: 'e.g. 2400000' },
+                        { id: 'riyadh', label: 'Riyadh Revenue (SAR)', type: 'number', placeholder: 'e.g. 1100000' },
+                        { id: 'cairo',  label: 'Cairo Revenue (EGP)', type: 'number', placeholder: 'e.g. 8500000' }
+                    ],
+                    template: 'Compare AMT branch performance this period:\n- Dubai: AED {dubai}\n- Riyadh: SAR {riyadh} (1 SAR=0.98 AED)\n- Cairo: EGP {cairo} (1 EGP=0.073 AED)\n\nConvert all to AED, show percentage share of total, rank the branches, and highlight any notable gaps or observations.'
+                }
+            ]
+        },
+        service: {
+            title: 'Service & After-Sales',
+            badge: 'Service',
+            badgeStyle: 'background:rgba(255,122,47,.1); color:#ff9955; border-color:rgba(255,122,47,.25)',
+            dotClass: 'dot-service',
+            dotGlow: 'box-shadow:0 0 8px #ff7a2f',
+            activeClass: 'active-service',
+            scenarios: [
+                {
+                    label: '📬 Customer Update',
+                    params: [
+                        { id: 'customer', label: 'Customer Name', type: 'text',   placeholder: 'e.g. Khalid Mansour' },
+                        { id: 'brand',    label: 'Brand',         type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Manfrotto', 'Profoto', 'Sennheiser'] },
+                        { id: 'model',    label: 'Model',         type: 'text',   placeholder: 'e.g. Inspire 3' },
+                        { id: 'status',   label: 'Current Status', type: 'select', options: ['Under diagnosis', 'Awaiting spare parts', 'In active repair', 'Ready for collection', 'Warranty claim approved', 'Out of warranty — estimate sent'] }
+                    ],
+                    template: 'Write a professional, empathetic customer update email to {customer}.\nEquipment: {brand} {model}\nCurrent status: {status}\n\nInclude: brief issue recap, current status explanation, next steps, and estimated timeline. Sign off as AMT Service Team.'
+                },
+                {
+                    label: '🔍 Repair Triage',
+                    params: [
+                        { id: 'brand', label: 'Brand',            type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
+                        { id: 'model', label: 'Model',            type: 'text',   placeholder: 'e.g. FX9' },
+                        { id: 'issue', label: 'Issue Description', type: 'text',   placeholder: 'e.g. Overheating then auto-shutdown' },
+                        { id: 'age',   label: 'Unit Age',         type: 'select', options: ['Under 6 months', '6–12 months', '12–18 months', 'Over 18 months'] }
+                    ],
+                    template: 'Triage this repair request:\n{brand} {model} — Age: {age}\nIssue: {issue}\n\nDiagnose the likely cause, confirm warranty eligibility (1-year AMT standard), and outline the service intake process for our team.'
+                },
+                {
+                    label: '📋 Service Ticket',
+                    params: [
+                        { id: 'company',      label: 'Customer / Company',  type: 'text',   placeholder: 'e.g. Pulse Films LLC' },
+                        { id: 'brand',        label: 'Brand',               type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
+                        { id: 'model_serial', label: 'Model + Serial #',    type: 'text',   placeholder: 'e.g. Komodo 6K, S/N RD-441892' },
+                        { id: 'issue',        label: 'Issue',               type: 'text',   placeholder: 'e.g. Green lines after firmware update' }
+                    ],
+                    template: 'Create a professional service intake ticket:\nCustomer: {company}\nDevice: {brand} {model_serial}\nReported issue: {issue}\n\nFormat as a complete ticket including: priority level, initial diagnosis hypothesis, warranty status check, and recommended next steps.'
+                },
+                {
+                    label: '⚠️ Warranty Guidance',
+                    params: [
+                        { id: 'brand',   label: 'Brand',                  type: 'select', options: ['DJI', 'Sony Professional', 'Hasselblad', 'RED', 'Profoto', 'Sennheiser', 'Manfrotto', 'Atomos'] },
+                        { id: 'product', label: 'Product',                type: 'text',   placeholder: 'e.g. X2D 100C' },
+                        { id: 'months',  label: 'Months Since Purchase',  type: 'select', options: ['Under 12 months (in warranty)', '12–15 months (recently expired)', '15–24 months', 'Over 24 months'] },
+                        { id: 'issue',   label: 'Issue Type',             type: 'text',   placeholder: 'e.g. Dead pixels on sensor' }
+                    ],
+                    template: 'Warranty guidance for a customer with {brand} {product}, purchased {months} ago.\nIssue: {issue}\n\nExplain: 1) warranty status under AMT\'s 1-year policy, 2) available options (warranty repair / out-of-warranty repair / replacement), 3) how to communicate this professionally to the customer.'
+                }
+            ]
+        }
+    };
+
+    function setDept(dept) {
+        closeParamsPanel();
+        currentDept = dept;
+        const c = deptConfig[dept];
+        currentScenarios = c.scenarios;
+
+        document.querySelectorAll('.dept-btn').forEach(b => {
+            b.className = b.className.replace(/active-\w+/g, '').trim();
+        });
+        document.getElementById(`dept-${dept}`).classList.add(c.activeClass);
+
+        const dot = document.getElementById('dept-dot');
+        dot.className = `w-2 h-2 rounded-full ${c.dotClass}`;
+        dot.style.cssText = c.dotGlow;
+
+        document.getElementById('dept-title').textContent = c.title;
+        const badge = document.getElementById('dept-badge');
+        badge.textContent = c.badge;
+        badge.style.cssText = c.badgeStyle;
+
+        document.getElementById('scenarios').innerHTML = c.scenarios.map((s, i) =>
+            `<button onclick="useScenario(${i})"
+                     id="scenario-btn-${i}"
+                     class="scenario-btn text-xs px-3 py-1.5 rounded-full border"
+                     style="border-color:rgba(255,255,255,.1); color:#666680; background:rgba(255,255,255,.03)">
+                ${s.label}
+            </button>`
+        ).join('');
+    }
+
+    function useScenario(i) {
+        if (activeScenarioIdx === i) {
+            closeParamsPanel();
+            return;
+        }
+        activeScenarioIdx = i;
+        document.querySelectorAll('.scenario-btn').forEach((b, idx) => {
+            b.classList.toggle('scenario-active', idx === i);
+        });
+        renderParamsPanel(currentScenarios[i]);
+    }
+
+    function renderParamsPanel(scenario) {
+        const panel = document.getElementById('params-panel');
+        panel.classList.remove('visible');
+        void panel.offsetWidth; // force reflow to restart animation
+
+        document.getElementById('params-label').textContent = scenario.label;
+
+        const fields = document.getElementById('params-fields');
+        fields.innerHTML = scenario.params.map(p => {
+            if (p.type === 'select') {
+                return `<div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
+                    <select id="param-${p.id}" class="param-field" style="min-width:145px">
+                        ${p.options.map(o => `<option>${o}</option>`).join('')}
+                    </select>
+                </div>`;
+            } else if (p.type === 'textarea') {
+                return `<div class="flex flex-col gap-1 w-full">
+                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
+                    <textarea id="param-${p.id}" class="param-field w-full resize-none" rows="3"
+                              placeholder="${p.placeholder || ''}"></textarea>
+                </div>`;
+            } else {
+                const w = p.type === 'number' ? '110px' : '165px';
+                return `<div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
+                    <input id="param-${p.id}" type="${p.type}" class="param-field"
+                           style="min-width:${w}" placeholder="${p.placeholder || ''}" />
+                </div>`;
+            }
+        }).join('');
+
+        fields.innerHTML += `<button onclick="buildPrompt()"
+            class="gen-btn self-end text-xs px-4 py-2 rounded-lg font-semibold text-black flex-shrink-0">
+            Generate Prompt →
+        </button>`;
+
+        panel.classList.add('visible');
+    }
+
+    function closeParamsPanel() {
+        activeScenarioIdx = -1;
+        document.getElementById('params-panel').classList.remove('visible');
+        document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('scenario-active'));
+    }
+
+    function buildPrompt() {
+        if (activeScenarioIdx < 0) return;
+        const s = currentScenarios[activeScenarioIdx];
+        let text = s.template;
+        s.params.forEach(p => {
+            const el = document.getElementById(`param-${p.id}`);
+            const val = el ? (el.value.trim() || p.placeholder || `[${p.label}]`) : `[${p.label}]`;
+            text = text.split(`{${p.id}}`).join(val);
+        });
+        document.getElementById('input').value = text;
+        document.getElementById('input').focus();
+        closeParamsPanel();
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    }
+
+    function esc(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function addMessage(role, content) {
+        const box = document.getElementById('messages');
+        const div = document.createElement('div');
+        div.className = `flex items-start gap-3 msg-enter ${role === 'user' ? 'flex-row-reverse' : ''}`;
+
+        if (role === 'user') {
+            div.innerHTML = `
+                <div class="w-7 h-7 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0"
+                     style="background:#222232; color:#8888a8">W</div>
+                <div class="rounded-2xl rounded-tr-sm px-4 py-3 max-w-lg"
+                     style="background:rgba(240,165,0,.1); border:1px solid rgba(240,165,0,.2)">
+                    <p class="text-sm whitespace-pre-wrap" style="color:#e8e8f0">${esc(content)}</p>
+                </div>`;
+        } else {
+            div.innerHTML = `
+                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                     style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-2xl md-body"
+                     style="background:rgba(18,18,28,.9); border:1px solid rgba(255,255,255,.07)">
+                    ${marked.parse(content)}
+                </div>`;
+        }
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function addTyping() {
+        const box = document.getElementById('messages');
+        const div = document.createElement('div');
+        div.id = 'typing';
+        div.className = 'flex items-start gap-3';
+        div.innerHTML = `
+            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                 style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+            <div class="rounded-2xl rounded-tl-sm px-4 py-3"
+                 style="background:rgba(18,18,28,.9); border:1px solid rgba(255,255,255,.07)">
+                <div class="flex gap-1.5 items-center h-5">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+            </div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const inp = document.getElementById('input');
+        const msg = inp.value.trim();
+        if (!msg || isLoading) return;
+
+        isLoading = true;
+        inp.value = '';
+        document.getElementById('send-btn').disabled = true;
+        document.getElementById('welcome-msg')?.remove();
+
+        addMessage('user', msg);
+        addTyping();
+
+        try {
+            const res  = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ department: currentDept, message: msg })
+            });
+            const data = await res.json();
+            document.getElementById('typing')?.remove();
+            if (data.error) { addMessage('assistant', `Error: ${data.error}`); }
+            else { addMessage('assistant', data.response); }
+        } catch (err) {
+            document.getElementById('typing')?.remove();
+            addMessage('assistant', 'Network error — please check the server is running.');
+        } finally {
+            isLoading = false;
+            document.getElementById('send-btn').disabled = false;
+        }
+    }
+
+    function clearChat() {
+        const box = document.getElementById('messages');
+        box.innerHTML = `
+            <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                     style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
+                     style="background:rgba(20,20,30,.8); border:1px solid rgba(255,255,255,.07)">
+                    <p class="text-sm" style="color:#a0a0b8">Welcome to AMT AI Assistant. Select a department on the left, pick a scenario, fill in the details, and generate a prompt — or type freely below.</p>
+                </div>
+            </div>`;
+    }
+
+    // Init
+    setDept('sales');
+</script>
+</body>
+</html>
