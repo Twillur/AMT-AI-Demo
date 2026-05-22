@@ -9,8 +9,50 @@ from .vector_store import lc_semantic_search
 N8N_TICKET_WEBHOOK = "http://localhost:5678/webhook/DhKyDc1sZdnNTasL/webhook/amt-new-ticket"
 
 
+def _build_email_html(p: dict) -> str:
+    warranty_label = "In Warranty" if p["warranty_status"] == "in_warranty" else "Out of Warranty"
+    warranty_color = "#155724" if p["warranty_status"] == "in_warranty" else "#721c24"
+    warranty_bg    = "#d4edda"  if p["warranty_status"] == "in_warranty" else "#f8d7da"
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:Arial,sans-serif;background:#f0f2f5;color:#333}}
+.wrap{{max-width:600px;margin:30px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}}
+.hdr{{background:#0d1b2a;padding:22px 28px}}
+.hdr-title{{color:#e8b94f;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}}
+.body{{padding:28px}}
+.heading{{font-size:20px;font-weight:700;color:#0d1b2a;margin-bottom:6px}}
+.sub{{color:#666;font-size:14px;margin-top:6px}}
+table{{width:100%;border-collapse:collapse;margin-top:18px;font-size:14px}}
+td{{padding:11px 14px;border-bottom:1px solid #f0f0f0}}
+td:first-child{{color:#888;font-weight:600;width:140px}}
+.badge{{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}}
+.ftr{{background:#f8f9fa;padding:16px 28px;font-size:12px;color:#aaa;border-top:3px solid #e8b94f;text-align:center}}
+</style></head>
+<body><div class="wrap">
+  <div class="hdr"><div class="hdr-title">Advanced Media Trading &mdash; Service Center</div></div>
+  <div class="body">
+    <div class="heading">New Repair Ticket Created</div>
+    <div class="sub">A repair request has been logged and is now open for processing.</div>
+    <table>
+      <tr><td>Ticket Ref</td><td><strong>{p['ticket_ref']}</strong></td></tr>
+      <tr><td>Customer</td><td>{p['customer']}</td></tr>
+      <tr><td>Product</td><td>{p['product']}</td></tr>
+      <tr><td>Serial No.</td><td>{p['serial_number']}</td></tr>
+      <tr><td>Issue</td><td>{p['issue']}</td></tr>
+      <tr><td>Warranty</td><td><span class="badge" style="background:{warranty_bg};color:{warranty_color}">{warranty_label}</span></td></tr>
+      <tr><td>Received</td><td>{p['received_date']}</td></tr>
+      <tr><td>Status</td><td><span class="badge" style="background:#d4edda;color:#155724">Open</span></td></tr>
+    </table>
+  </div>
+  <div class="ftr">AMT Service Center &mdash; Al Quoz Industrial 4, Dubai &nbsp;|&nbsp; service@amt.tv</div>
+</div></body></html>"""
+
+
 def _fire_n8n_notification(payload: dict):
     try:
+        payload["subject"] = f"[AMT Service] New Repair Ticket — {payload['ticket_ref']} | {payload['product']}"
+        payload["html_body"] = _build_email_html(payload)
         requests.post(N8N_TICKET_WEBHOOK, json=payload, timeout=10)
     except Exception:
         pass
