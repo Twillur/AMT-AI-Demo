@@ -13,6 +13,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "amt-demo-2026")
 
 from agents import langgraph_flow
+from agents import sales as sales_agent
+from agents import reports as report_gen
 from agents.db_utils import query
 
 
@@ -76,6 +78,32 @@ def chat():
 @app.route("/api/stats")
 def stats():
     return jsonify(get_stats())
+
+
+@app.route("/api/rfq", methods=["POST"])
+def rfq():
+    data = request.get_json()
+    from_email = data.get("from", "unknown@example.com")
+    from_name  = data.get("from_name", "Customer")
+    subject    = data.get("subject", "Quote Request")
+    body       = data.get("body", "")
+    if not body:
+        return jsonify({"error": "No email body"}), 400
+    try:
+        result = sales_agent.run_rfq(from_email, from_name, subject, body)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/report/distribution")
+def report_distribution():
+    return jsonify({"html": report_gen.distribution_briefing_html()})
+
+
+@app.route("/api/report/finance")
+def report_finance():
+    return jsonify({"html": report_gen.finance_overdue_html()})
 
 
 @app.route("/api/reset", methods=["POST"])

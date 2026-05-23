@@ -6,7 +6,8 @@ from .db_utils import query, execute
 from . import trace
 from .vector_store import lc_semantic_search
 
-N8N_TICKET_WEBHOOK = "http://localhost:5678/webhook/DhKyDc1sZdnNTasL/webhook/amt-new-ticket"
+N8N_TICKET_WEBHOOK  = "http://localhost:5678/webhook/DhKyDc1sZdnNTasL/webhook/amt-new-ticket"
+N8N_UPDATE_WEBHOOK  = "http://localhost:5678/webhook/e959LqnzZkMIUy7X/webhook/amt-ticket-update"
 
 
 def _build_email_html(p: dict) -> str:
@@ -239,6 +240,26 @@ def update_ticket_status(ticket_ref: str, new_status: str, notes: str = None) ->
     sql += " WHERE ticket_ref = ?"
     params.append(ticket_ref)
     execute(sql, tuple(params))
+
+    if new_status in ("diagnosed", "in_repair", "awaiting_parts", "ready", "closed"):
+        ticket = query("""
+            SELECT t.ticket_ref, c.name AS customer, p.brand, p.model
+            FROM service_tickets t
+            JOIN customers c ON c.id = t.customer_id
+            JOIN products p ON p.id = t.product_id
+            WHERE t.ticket_ref = ?
+        """, (ticket_ref,))
+        if ticket:
+            from .reports import ticket_update_html
+            t = ticket[0]
+            subject, html = ticket_update_html(
+                ticket_ref, t["customer"],
+                f"{t['brand']} {t['model']}", new_status, notes or ""
+            )
+            payload = {"subject": subject, "html_body": html, "ticket_ref": ticket_ref, "new_status": new_status}
+            threading.Thread(target=lambda: requests.post(N8N_UPDATE_WEBHOOK, json=payload, timeout=10), daemon=True).start()
+            trace.log("n8n_update_webhook", "n8n", f"Customer update email fired → {new_status}")
+
     return {"ticket_ref": ticket_ref, "new_status": new_status, "updated": True}
 
 
