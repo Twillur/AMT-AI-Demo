@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Domains — AMT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        body {
+            background: #09090e;
+            background-image: radial-gradient(circle, #1a1a26 1px, transparent 1px);
+            background-size: 28px 28px;
+            color: #e8e8f0;
+            min-height: 100vh;
+        }
+        .glass { background: rgba(14,14,20,.88); backdrop-filter: blur(14px); }
+
+        /* ── Domain card ── */
+        .domain-card {
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,.07);
+            background: rgba(14,14,22,.8);
+            overflow: hidden;
+            transition: box-shadow .25s, border-color .25s, transform .2s;
+        }
+        .domain-card:hover { transform: translateY(-2px); }
+
+        /* ── Tool pill ── */
+        .tool-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 10px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.03);
+            font-size: .72rem; cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+        .tool-pill:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); }
+        .tool-pill.active { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+
+        /* ── Tool detail panel ── */
+        .tool-detail {
+            display: none;
+            animation: slideIn .2s cubic-bezier(.16,1,.3,1) both;
+        }
+        .tool-detail.open { display: block; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Table row ── */
+        .table-row {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+        }
+        .table-row:last-child { border-bottom: none; }
+
+        .type-badge {
+            font-size: .6rem; font-weight: 700; letter-spacing: .07em;
+            padding: 2px 7px; border-radius: 6px; flex-shrink: 0; margin-top: 1px;
+        }
+
+        /* ── Stat chip ── */
+        .stat-chip {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,.07);
+            background: rgba(255,255,255,.02);
+        }
+
+        /* ── Section label ── */
+        .slabel {
+            font-size: .62rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: #2e2e48;
+        }
+
+        /* ── Param tag ── */
+        .param-tag {
+            font-size: .65rem; padding: 1px 7px; border-radius: 5px;
+            background: rgba(255,255,255,.05); color: #66668a;
+            border: 1px solid rgba(255,255,255,.07);
+        }
+        .param-tag.required { background: rgba(240,165,0,.08); color: #c09040; border-color: rgba(240,165,0,.2); }
+
+        /* ── Embedded badge ── */
+        .embedded-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .65rem; font-weight: 700; letter-spacing: .05em;
+            padding: 3px 9px; border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="glass border-b border-white/[.05] px-6 py-3.5 flex items-center justify-between sticky top-0 z-20">
+    <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm text-black flex-shrink-0"
+             style="background: linear-gradient(135deg,#f0a500,#e05500); box-shadow: 0 0 16px -4px rgba(240,165,0,.4)">A</div>
+        <div>
+            <p class="text-sm font-semibold text-white leading-tight">AI Domains</p>
+            <p class="text-xs leading-tight" style="color:#44445a">Routing verticals — the AI uses these to classify requests and pick the right tools & tables</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-3">
+        <div id="hdr-stats" class="flex gap-2"></div>
+        <a href="/embeddings"
+           class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
+           style="color:#44445a; text-decoration:none">✦ Vector Space</a>
+        <a href="/"
+           class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
+           style="color:#44445a; text-decoration:none">← Back to AI</a>
+    </div>
+</header>
+
+<!-- Summary stats bar -->
+<div id="stats-bar" class="flex gap-4 px-6 py-4 border-b border-white/[.04]" style="background:rgba(8,8,13,.7)"></div>
+
+<!-- Domain cards grid -->
+<main class="px-6 py-6">
+    <div id="domains-grid" class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(540px, 1fr))"></div>
+</main>
+
+<script>
+async function load() {
+    const res = await fetch('/api/domains');
+    const domains = await res.json();
+    renderStats(domains);
+    renderGrid(domains);
+}
+
+function renderStats(domains) {
+    const totalTools  = domains.reduce((s,d) => s + d.tools.length, 0);
+    const totalTables = domains.reduce((s,d) => s + d.tables.length, 0);
+
+    document.getElementById('hdr-stats').innerHTML = [
+        { label: 'Active Domains', value: domains.length, color: '#10d97a' },
+        { label: 'Tools',          value: totalTools,     color: '#3b7eff' },
+        { label: 'Tables / Stores', value: totalTables,  color: '#9d5eff' },
+    ].map(s => `
+        <div class="flex items-center gap-2 px-3 py-1 rounded-xl border border-white/[.06]" style="background:rgba(255,255,255,.02)">
+            <span class="text-sm font-bold" style="color:${s.color}">${s.value}</span>
+            <span class="text-xs" style="color:#33334a">${s.label}</span>
+        </div>`).join('');
+
+    document.getElementById('stats-bar').innerHTML = [
+        { icon:'🔵', label:'Active Domains',   value: domains.length,  color:'#3b7eff' },
+        { icon:'🔧', label:'Mapped Tools',      value: totalTools,      color:'#10d97a' },
+        { icon:'🗄️', label:'Tables / Stores',  value: totalTables,     color:'#9d5eff' },
+        { icon:'✅', label:'Embedded',          value: `${domains.length}/${domains.length}`, color:'#10d97a' },
+        { icon:'⚡', label:'n8n Automations',   value: '5 workflows',   color:'#f0a500' },
+    ].map(s => `
+        <div class="stat-chip">
+            <span>${s.icon}</span>
+            <div>
+                <p class="text-sm font-bold leading-tight" style="color:${s.color}">${s.value}</p>
+                <p class="leading-tight" style="font-size:.62rem; color:#2e2e48">${s.label}</p>
+            </div>
+        </div>`).join('');
+}
+
+function renderGrid(domains) {
+    document.getElementById('domains-grid').innerHTML = domains.map(d => domainCard(d)).join('');
+}
+
+function domainCard(d) {
+    const toolsHtml = d.tools.map((t, i) => `
+        <button onclick="toggleTool('${d.id}', ${i})"
+                id="pill-${d.id}-${i}"
+                class="tool-pill">
+            <span style="width:5px;height:5px;border-radius:50%;background:${d.color};box-shadow:0 0 4px ${d.color};flex-shrink:0"></span>
+            <span style="color:#c8c8e0">${t.name}</span>
+        </button>
+        <div id="tool-${d.id}-${i}" class="tool-detail w-full mt-1 mb-2">
+            <div class="rounded-10 p-3" style="background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px">
+                <p class="text-xs mb-2" style="color:#8888a8">${t.description}</p>
+                <div class="flex flex-wrap gap-1.5">
+                    ${t.params.map(p => `
+                        <span class="param-tag ${t.required.includes(p) ? 'required' : ''}">
+                            ${t.required.includes(p) ? '* ' : ''}${p}
+                        </span>`).join('')}
+                </div>
+            </div>
+        </div>`).join('');
+
+    const tablesHtml = d.tables.map(t => {
+        const typeColors = {
+            'Table':       { bg:'rgba(64,136,255,.1)',  fg:'#4088ff',  border:'rgba(64,136,255,.2)'  },
+            'View':        { bg:'rgba(16,217,122,.1)',  fg:'#10d97a',  border:'rgba(16,217,122,.2)'  },
+            'Vector Store':{ bg:'rgba(255,79,163,.1)',  fg:'#ff4fa3',  border:'rgba(255,79,163,.2)'  },
+            'Engine':      { bg:'rgba(224,64,251,.1)',  fg:'#e040fb',  border:'rgba(224,64,251,.2)'  },
+            'Automation':  { bg:'rgba(255,107,53,.1)',  fg:'#ff6b35',  border:'rgba(255,107,53,.2)'  },
+        };
+        const tc = typeColors[t.type] || typeColors['Table'];
+        return `
+            <div class="table-row">
+                <span class="type-badge" style="background:${tc.bg}; color:${tc.fg}; border:1px solid ${tc.border}">${t.type}</span>
+                <div>
+                    <p class="text-xs font-semibold mb-0.5" style="color:#d0d0e8; font-family: monospace">${t.name}</p>
+                    <p class="text-xs" style="color:#44445a">${t.description}</p>
+                </div>
+            </div>`;
+    }).join('');
+
+    return `
+    <div class="domain-card" style="box-shadow: 0 0 0 0 ${d.color}">
+        <!-- Accent top bar -->
+        <div style="height:3px; background:linear-gradient(90deg, ${d.color}, ${d.color}44)"></div>
+
+        <!-- Card header -->
+        <div class="px-5 pt-4 pb-3" style="border-bottom:1px solid rgba(255,255,255,.05)">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                         style="background:${d.color}18; border:1px solid ${d.color}30">${d.icon}</div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <h2 class="text-sm font-bold" style="color:#f2f2f4">${d.name}</h2>
+                            <span class="embedded-badge" style="background:rgba(16,217,122,.1); color:#10d97a; border:1px solid rgba(16,217,122,.2)">
+                                <span style="width:5px;height:5px;border-radius:50%;background:#10d97a;box-shadow:0 0 4px #10d97a"></span>EMBEDDED
+                            </span>
+                        </div>
+                        <p class="text-xs" style="color:#3a3a58">${d.tools.length} tools · ${d.tables.length} data sources</p>
+                    </div>
+                </div>
+            </div>
+            <p class="text-xs mt-3 leading-relaxed" style="color:#6666a0">${d.description}</p>
+        </div>
+
+        <!-- Tools section -->
+        <div class="px-5 pt-3.5 pb-3" style="border-bottom:1px solid rgba(255,255,255,.04)">
+            <p class="slabel mb-2.5">Tools (${d.tools.length})</p>
+            <div class="flex flex-wrap gap-2">
+                ${toolsHtml}
+            </div>
+        </div>
+
+        <!-- Tables section -->
+        <div>
+            <p class="slabel px-5 pt-3.5 mb-0">Data Sources (${d.tables.length})</p>
+            ${tablesHtml}
+        </div>
+    </div>`;
+}
+
+function toggleTool(domainId, idx) {
+    const detail = document.getElementById(`tool-${domainId}-${idx}`);
+    const pill   = document.getElementById(`pill-${domainId}-${idx}`);
+    const isOpen = detail.classList.toggle('open');
+    pill.classList.toggle('active', isOpen);
+}
+
+load();
+</script>
+</body>
+</html>

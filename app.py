@@ -96,6 +96,22 @@ def rfq():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/embeddings")
+def embeddings_viz():
+    return render_template("embeddings.html")
+
+
+@app.route("/domains")
+def domains_page():
+    return render_template("domains.html")
+
+
+@app.route("/api/domains")
+def domains_api():
+    from agents.domains_config import get_domains_payload
+    return jsonify(get_domains_payload())
+
+
 @app.route("/api/report/distribution")
 def report_distribution():
     return jsonify({"html": report_gen.distribution_briefing_html()})
@@ -104,6 +120,16 @@ def report_distribution():
 @app.route("/api/report/finance")
 def report_finance():
     return jsonify({"html": report_gen.finance_overdue_html()})
+
+
+@app.route("/api/restart", methods=["POST"])
+def restart_server():
+    import sys, os, threading
+    def _restart():
+        import time; time.sleep(0.6)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    threading.Thread(target=_restart, daemon=True).start()
+    return jsonify({"ok": True})
 
 
 @app.route("/api/reset", methods=["POST"])

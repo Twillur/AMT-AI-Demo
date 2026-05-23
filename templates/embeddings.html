@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMT Vector Space — Product Embeddings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Space Grotesk', sans-serif; }
+        body { background: #09090e; color: #e8e8f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        header {
+            padding: 14px 24px;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            background: rgba(14,14,20,.9);
+            backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 14px; }
+        .hdr-title { font-size: 15px; font-weight: 700; color: #f2f2f4; }
+        .hdr-sub { font-size: 12px; color: #44445a; margin-top: 2px; }
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px; font-size: .65rem;
+            font-weight: 700; letter-spacing: .05em; border: 1px solid;
+        }
+
+        .main { display: flex; flex: 1; overflow: hidden; }
+
+        /* ── Canvas area ── */
+        #canvas-wrap {
+            flex: 1; position: relative; overflow: hidden;
+            background-image: radial-gradient(circle, #1a1a26 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+        canvas { position: absolute; inset: 0; cursor: crosshair; }
+
+        /* ── Tooltip ── */
+        #tooltip {
+            position: fixed; pointer-events: none;
+            background: rgba(12,12,20,.97); border: 1px solid rgba(255,255,255,.12);
+            border-radius: 12px; padding: 12px 16px; min-width: 220px;
+            display: none; z-index: 100; backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        }
+        #tooltip .tt-brand { font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #44445a; margin-bottom: 3px; }
+        #tooltip .tt-model { font-size: 14px; font-weight: 700; color: #f2f2f4; margin-bottom: 6px; }
+        #tooltip .tt-cat   { font-size: .72rem; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; font-weight: 600; }
+        #tooltip .tt-price { font-size: .78rem; color: #f0a500; font-weight: 600; margin-bottom: 6px; }
+        #tooltip .tt-desc  { font-size: .72rem; color: #66668a; line-height: 1.5; }
+
+        /* ── Legend panel ── */
+        #legend {
+            width: 200px; flex-shrink: 0; padding: 20px 16px;
+            border-left: 1px solid rgba(255,255,255,.05);
+            background: rgba(10,10,16,.7);
+            overflow-y: auto;
+        }
+        .legend-title { font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #2e2e45; margin-bottom: 14px; }
+        .legend-item {
+            display: flex; align-items: center; gap: 9px;
+            padding: 7px 10px; border-radius: 8px; margin-bottom: 4px;
+            cursor: pointer; border: 1px solid transparent;
+            transition: background .15s, border-color .15s;
+        }
+        .legend-item:hover { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); }
+        .legend-item.active { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .legend-label { font-size: .78rem; color: #9898b8; font-weight: 500; }
+        .legend-count { font-size: .65rem; color: #3a3a52; margin-left: auto; }
+
+        .info-box {
+            margin-top: 20px; padding: 12px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.06);
+            background: rgba(255,255,255,.02);
+        }
+        .info-box p { font-size: .72rem; color: #44445a; line-height: 1.6; }
+        .info-box strong { color: #9898b8; }
+
+        /* ── Stats strip ── */
+        .stats-strip {
+            display: flex; gap: 6px; padding: 10px 16px;
+            border-top: 1px solid rgba(255,255,255,.04);
+            background: rgba(8,8,13,.8);
+            flex-shrink: 0;
+        }
+        .stat-pill {
+            padding: 4px 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,.07);
+            font-size: .65rem; color: #44445a;
+        }
+        .stat-pill span { color: #9898b8; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="hdr-left">
+        <div>
+            <p class="hdr-title">AMT Product Vector Space</p>
+            <p class="hdr-sub">LlamaIndex + ChromaDB — 1536-dimensional embeddings reduced to 2D via t-SNE</p>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center">
+        <span class="badge" style="color:#ff4fa3; border-color:rgba(255,79,163,.25); background:rgba(255,79,163,.07)">
+            <span style="width:5px;height:5px;border-radius:50%;background:#ff4fa3;box-shadow:0 0 5px #ff4fa3"></span>LlamaIndex
+        </span>
+        <span class="badge" style="color:#00c853; border-color:rgba(0,200,83,.25); background:rgba(0,200,83,.07)">
+            <span style="width:5px;height:5px;border-radius:50%;background:#00c853;box-shadow:0 0 5px #00c853"></span>ChromaDB
+        </span>
+        <span class="badge" style="color:#f0a500; border-color:rgba(240,165,0,.25); background:rgba(240,165,0,.07)">
+            <span style="width:5px;height:5px;border-radius:50%;background:#f0a500;box-shadow:0 0 5px #f0a500"></span>GPT-4o Embeddings
+        </span>
+        <a href="/" style="font-size:.75rem; color:#44445a; text-decoration:none; padding:5px 12px; border:1px solid rgba(255,255,255,.07); border-radius:8px; margin-left:8px">← Back to AI</a>
+    </div>
+</header>
+
+<div class="main">
+    <div id="canvas-wrap">
+        <canvas id="c"></canvas>
+    </div>
+
+    <div id="legend">
+        <p class="legend-title">Categories</p>
+        <div id="legend-items"></div>
+
+        <div class="info-box" style="margin-top:16px">
+            <p><strong>What you're seeing:</strong> Each dot is a product from AMT's catalog. Products that are semantically similar — same use case, same market — cluster together naturally.</p>
+        </div>
+        <div class="info-box">
+            <p><strong>How it works:</strong> LlamaIndex converted each product description into <strong>1,536 numbers</strong> (a vector). t-SNE compressed those into 2D so you can see the clusters.</p>
+        </div>
+        <div class="info-box">
+            <p><strong>Why it matters:</strong> When a client asks for <em>"a camera for broadcast news"</em>, the AI finds the nearest vectors — not keywords.</p>
+        </div>
+    </div>
+</div>
+
+<div class="stats-strip">
+    <div class="stat-pill"><span id="s-total">39</span> products embedded</div>
+    <div class="stat-pill"><span>1,536</span> dimensions per vector</div>
+    <div class="stat-pill">t-SNE <span>perplexity 8</span></div>
+    <div class="stat-pill">Collection: <span>amt_products_v2</span></div>
+    <div class="stat-pill" style="margin-left:auto; color:#66668a; font-style:italic">Hover any dot to inspect</div>
+</div>
+
+<div id="tooltip">
+    <div class="tt-brand" id="tt-brand"></div>
+    <div class="tt-model" id="tt-model"></div>
+    <div class="tt-cat"  id="tt-cat"></div>
+    <div class="tt-price" id="tt-price"></div>
+    <div class="tt-desc"  id="tt-desc"></div>
+</div>
+
+<script>
+const CATEGORY_COLORS = {
+    camera:    { color: '#3b7eff', glow: 'rgba(59,126,255,.35)',  bg: 'rgba(59,126,255,.15)'  },
+    drone:     { color: '#10d97a', glow: 'rgba(16,217,122,.35)',  bg: 'rgba(16,217,122,.15)'  },
+    lens:      { color: '#9d5eff', glow: 'rgba(157,94,255,.35)',  bg: 'rgba(157,94,255,.15)'  },
+    lighting:  { color: '#f0a500', glow: 'rgba(240,165,0,.35)',   bg: 'rgba(240,165,0,.15)'   },
+    audio:     { color: '#ff4fa3', glow: 'rgba(255,79,163,.35)',  bg: 'rgba(255,79,163,.15)'  },
+    gimbal:    { color: '#00d4ff', glow: 'rgba(0,212,255,.35)',   bg: 'rgba(0,212,255,.15)'   },
+    recording: { color: '#ff7a2f', glow: 'rgba(255,122,47,.35)',  bg: 'rgba(255,122,47,.15)'  },
+    support:   { color: '#7888a8', glow: 'rgba(120,136,168,.35)', bg: 'rgba(120,136,168,.15)' },
+    storage:   { color: '#e040fb', glow: 'rgba(224,64,251,.35)',  bg: 'rgba(224,64,251,.15)'  },
+};
+
+const DEFAULT_COLOR = { color: '#888898', glow: 'rgba(136,136,152,.3)', bg: 'rgba(136,136,152,.1)' };
+
+let points = [];
+let activeCategory = null;
+let animFrame = 0;
+let hovered = null;
+let scale = 1, offsetX = 0, offsetY = 0;
+let isDragging = false, dragStart = null;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+async function init() {
+    const res = await fetch('/static/embeddings_viz.json');
+    points = await res.json();
+
+    // Normalize coordinates to canvas space
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    points.forEach(p => {
+        p.nx = (p.x - minX) / (maxX - minX); // 0–1
+        p.ny = (p.y - minY) / (maxY - minY);
+    });
+
+    buildLegend();
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(animate);
+}
+
+function resize() {
+    const wrap = document.getElementById('canvas-wrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    draw();
+}
+
+function toScreen(nx, ny) {
+    const pad = 80;
+    const w = canvas.width - pad * 2;
+    const h = canvas.height - pad * 2;
+    return {
+        x: pad + nx * w * scale + offsetX,
+        y: pad + ny * h * scale + offsetY,
+    };
+}
+
+function animate() {
+    animFrame++;
+    draw();
+    requestAnimationFrame(animate);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw cluster label backgrounds
+    const clusters = {};
+    points.forEach(p => {
+        const cat = p.category || 'other';
+        if (!clusters[cat]) clusters[cat] = { xs: [], ys: [] };
+        const s = toScreen(p.nx, p.ny);
+        clusters[cat].xs.push(s.x);
+        clusters[cat].ys.push(s.y);
+    });
+
+    Object.entries(clusters).forEach(([cat, { xs, ys }]) => {
+        const cx = xs.reduce((a,b)=>a+b,0)/xs.length;
+        const cy = ys.reduce((a,b)=>a+b,0)/ys.length;
+        const c = CATEGORY_COLORS[cat] || DEFAULT_COLOR;
+        const dimmed = activeCategory && activeCategory !== cat;
+        if (dimmed) return;
+        ctx.fillStyle = dimmed ? 'rgba(255,255,255,.04)' : c.color + '18';
+        ctx.font = '600 11px Space Grotesk, sans-serif';
+        ctx.letterSpacing = '0.06em';
+        ctx.fillStyle = dimmed ? '#222238' : c.color + 'aa';
+        ctx.textAlign = 'center';
+        ctx.fillText(cat.toUpperCase(), cx, cy - 28);
+    });
+
+    // Draw connecting lines between same-category dots (subtle)
+    points.forEach((p, i) => {
+        if (activeCategory && p.category !== activeCategory) return;
+        const s1 = toScreen(p.nx, p.ny);
+        points.slice(i+1).forEach(p2 => {
+            if (p2.category !== p.category) return;
+            const s2 = toScreen(p2.nx, p2.ny);
+            const dist = Math.hypot(s2.x-s1.x, s2.y-s1.y);
+            if (dist > 120) return;
+            const c = CATEGORY_COLORS[p.category] || DEFAULT_COLOR;
+            ctx.strokeStyle = c.color + '18';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(s1.x, s1.y);
+            ctx.lineTo(s2.x, s2.y);
+            ctx.stroke();
+        });
+    });
+
+    // Draw dots
+    points.forEach((p, i) => {
+        const s = toScreen(p.nx, p.ny);
+        const c = CATEGORY_COLORS[p.category] || DEFAULT_COLOR;
+        const isHovered = hovered === i;
+        const dimmed = activeCategory && p.category !== activeCategory;
+
+        const radius = isHovered ? 9 : 6;
+        const pulse = isHovered ? Math.sin(animFrame * 0.07) * 3 : 0;
+
+        // Glow
+        if (!dimmed) {
+            const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, (radius + pulse + 12));
+            grd.addColorStop(0, c.glow);
+            grd.addColorStop(1, 'transparent');
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, radius + pulse + 12, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Dot
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, radius + pulse, 0, Math.PI * 2);
+        ctx.fillStyle = dimmed ? '#1e1e2a' : c.color;
+        ctx.globalAlpha = dimmed ? 0.2 : 1;
+        ctx.fill();
+
+        // White center for hovered
+        if (isHovered && !dimmed) {
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+    });
+}
+
+// Mouse interaction
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    if (isDragging) {
+        offsetX += mx - dragStart.x;
+        offsetY += my - dragStart.y;
+        dragStart = { x: mx, y: my };
+        return;
+    }
+
+    let closest = null, closestDist = 20;
+    points.forEach((p, i) => {
+        const s = toScreen(p.nx, p.ny);
+        const dist = Math.hypot(s.x - mx, s.y - my);
+        if (dist < closestDist) { closestDist = dist; closest = i; }
+    });
+
+    hovered = closest;
+    canvas.style.cursor = closest !== null ? 'pointer' : 'crosshair';
+
+    if (closest !== null) {
+        const p = points[closest];
+        const c = CATEGORY_COLORS[p.category] || DEFAULT_COLOR;
+        document.getElementById('tt-brand').textContent = p.brand;
+        document.getElementById('tt-model').textContent = p.model;
+        const catEl = document.getElementById('tt-cat');
+        catEl.textContent = p.category;
+        catEl.style.background = c.bg;
+        catEl.style.color = c.color;
+        document.getElementById('tt-price').textContent = p.price ? `AED ${Number(p.price).toLocaleString()}` : '';
+        document.getElementById('tt-desc').textContent = p.desc + '…';
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 16) + 'px';
+        tooltip.style.top  = (e.clientY - 10) + 'px';
+    } else {
+        tooltip.style.display = 'none';
+    }
+});
+
+canvas.addEventListener('mouseleave', () => {
+    hovered = null;
+    tooltip.style.display = 'none';
+});
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+    scale = Math.max(0.5, Math.min(4, scale * zoomFactor));
+}, { passive: false });
+
+canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStart = { x: e.clientX - document.getElementById('canvas-wrap').getBoundingClientRect().left,
+                  y: e.clientY - document.getElementById('canvas-wrap').getBoundingClientRect().top };
+    canvas.style.cursor = 'grabbing';
+});
+canvas.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'crosshair'; });
+
+function buildLegend() {
+    const counts = {};
+    points.forEach(p => { counts[p.category] = (counts[p.category] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    const el = document.getElementById('legend-items');
+    el.innerHTML = sorted.map(([cat, count]) => {
+        const c = CATEGORY_COLORS[cat] || DEFAULT_COLOR;
+        return `<div class="legend-item" onclick="toggleCat('${cat}')" id="leg-${cat}">
+            <div class="legend-dot" style="background:${c.color}; box-shadow:0 0 6px ${c.color}"></div>
+            <span class="legend-label">${cat}</span>
+            <span class="legend-count">${count}</span>
+        </div>`;
+    }).join('');
+}
+
+function toggleCat(cat) {
+    activeCategory = activeCategory === cat ? null : cat;
+    document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+    if (activeCategory) document.getElementById('leg-' + cat)?.classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>

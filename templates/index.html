@@ -12,7 +12,7 @@
 
         body {
             background-color: #09090e;
-            background-image: radial-gradient(circle, #1e1e2a 1px, transparent 1px);
+            background-image: radial-gradient(circle, #1a1a26 1px, transparent 1px);
             background-size: 28px 28px;
         }
 
@@ -27,34 +27,39 @@
         /* ── Dept cards ─────────────────────────── */
         .dept-btn { transition: border-color .2s, background .2s, box-shadow .2s; }
         .dept-btn:hover { background: rgba(255,255,255,.04); }
-        .dept-btn.active-sales        { border-color: var(--glow-sales);        background: rgba(59,126,255,.08);  box-shadow: 0 0 16px -4px rgba(59,126,255,.3);  }
-        .dept-btn.active-distribution { border-color: var(--glow-distribution); background: rgba(16,217,122,.08);  box-shadow: 0 0 16px -4px rgba(16,217,122,.3);  }
-        .dept-btn.active-finance      { border-color: var(--glow-finance);      background: rgba(157,94,255,.08);  box-shadow: 0 0 16px -4px rgba(157,94,255,.3);  }
-        .dept-btn.active-service      { border-color: var(--glow-service);      background: rgba(255,122,47,.08);  box-shadow: 0 0 16px -4px rgba(255,122,47,.3);  }
+        .dept-btn.active-sales        { border-color: var(--glow-sales);        background: rgba(59,126,255,.08);  box-shadow: 0 0 18px -4px rgba(59,126,255,.25);  }
+        .dept-btn.active-distribution { border-color: var(--glow-distribution); background: rgba(16,217,122,.08);  box-shadow: 0 0 18px -4px rgba(16,217,122,.25);  }
+        .dept-btn.active-finance      { border-color: var(--glow-finance);      background: rgba(157,94,255,.08);  box-shadow: 0 0 18px -4px rgba(157,94,255,.25);  }
+        .dept-btn.active-service      { border-color: var(--glow-service);      background: rgba(255,122,47,.08);  box-shadow: 0 0 18px -4px rgba(255,122,47,.25);  }
 
-        /* ── Dept dot indicator ─────────────────── */
-        .dot-sales        { background: var(--glow-sales); }
-        .dot-distribution { background: var(--glow-distribution); }
-        .dot-finance      { background: var(--glow-finance); }
-        .dot-service      { background: var(--glow-service); }
+        /* ── Dept dot ───────────────────────────── */
+        .dot-sales        { background: var(--glow-sales);        --dept-glow: #3b7eff; }
+        .dot-distribution { background: var(--glow-distribution); --dept-glow: #10d97a; }
+        .dot-finance      { background: var(--glow-finance);      --dept-glow: #9d5eff; }
+        .dot-service      { background: var(--glow-service);      --dept-glow: #ff7a2f; }
+        #dept-dot { animation: dotPulseAnim 2.8s ease-in-out infinite; }
+        @keyframes dotPulseAnim {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: .65; transform: scale(1.35); }
+        }
 
         /* ── Send button ───────────────────────── */
         #send-btn {
             background: linear-gradient(135deg, #f0a500, #e05500);
             transition: opacity .2s, box-shadow .2s, transform .15s;
         }
-        #send-btn:hover:not(:disabled) { opacity: .92; box-shadow: 0 0 20px -4px rgba(240,165,0,.5); transform: translateY(-1px); }
-        #send-btn:active { transform: translateY(0); }
-        #send-btn:disabled { opacity: .35; }
+        #send-btn:hover:not(:disabled) { opacity:.9; box-shadow:0 0 22px -4px rgba(240,165,0,.55); transform:translateY(-1px); }
+        #send-btn:active { transform:translateY(0); }
+        #send-btn:disabled { opacity:.3; }
 
         /* ── Input focus glow ──────────────────── */
-        #input:focus { border-color: rgba(240,165,0,.5); box-shadow: 0 0 0 3px rgba(240,165,0,.08); }
+        #input:focus { border-color:rgba(240,165,0,.5); box-shadow:0 0 0 3px rgba(240,165,0,.07); }
 
         /* ── Message animations ────────────────── */
-        .msg-enter { animation: msgIn .28s cubic-bezier(.16,1,.3,1) both; }
+        .msg-enter { animation: msgIn .3s cubic-bezier(.16,1,.3,1) both; }
         @keyframes msgIn {
-            from { opacity: 0; transform: translateY(12px) scale(.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity:0; transform:translateY(14px) scale(.97); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
         }
 
         /* ── Typing dots ───────────────────────── */
@@ -66,27 +71,76 @@
             40%          { transform:scale(1.2); opacity:1; }
         }
 
-        /* ── Scenario buttons ──────────────────── */
-        .scenario-btn { transition: background .18s, border-color .18s, transform .15s, color .18s; }
-        .scenario-btn:hover { transform:translateY(-1px); background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2); color:#f2f2f4; }
-        .scenario-btn.scenario-active { background:rgba(255,255,255,.1) !important; border-color:rgba(255,255,255,.28) !important; color:#f2f2f4 !important; }
+        /* ── Scenario cards ────────────────────── */
+        .scenario-card {
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; gap: 11px;
+            padding: 11px 14px 11px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,.07);
+            background: rgba(255,255,255,.02);
+            text-align: left; flex: 1; min-width: 140px;
+            cursor: pointer;
+            transition: border-color .2s, background .2s, transform .16s, box-shadow .2s;
+        }
+        .scenario-card:hover {
+            background: rgba(255,255,255,.055);
+            border-color: rgba(255,255,255,.16);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,.35);
+        }
+        /* shimmer sweep on hover */
+        .scenario-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.05) 50%, transparent 65%);
+            transform: translateX(-100%); pointer-events: none;
+        }
+        .scenario-card:hover::before { animation: cardShimmer .55s ease forwards; }
+        @keyframes cardShimmer { to { transform: translateX(180%); } }
+
+        /* active states per dept */
+        .sc-active-sales        { border-color: rgba(59,126,255,.55)  !important; background: rgba(59,126,255,.1)  !important; box-shadow: 0 0 20px -4px rgba(59,126,255,.35)  !important; transform:translateY(-1px); }
+        .sc-active-distribution { border-color: rgba(16,217,122,.55)  !important; background: rgba(16,217,122,.1)  !important; box-shadow: 0 0 20px -4px rgba(16,217,122,.35)  !important; transform:translateY(-1px); }
+        .sc-active-finance      { border-color: rgba(157,94,255,.55)  !important; background: rgba(157,94,255,.1)  !important; box-shadow: 0 0 20px -4px rgba(157,94,255,.35)  !important; transform:translateY(-1px); }
+        .sc-active-service      { border-color: rgba(255,122,47,.55)  !important; background: rgba(255,122,47,.1)  !important; box-shadow: 0 0 20px -4px rgba(255,122,47,.35)  !important; transform:translateY(-1px); }
+
+        /* ── Scenario icon circle ──────────────── */
+        .sc-icon {
+            width: 34px; height: 34px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; flex-shrink: 0;
+        }
 
         /* ── Params panel ──────────────────────── */
-        #params-panel { display:none; }
-        #params-panel.visible { display:block; animation: panelIn .22s cubic-bezier(.16,1,.3,1) both; }
+        #params-panel { display: none; }
+        #params-panel.visible {
+            display: block;
+            animation: panelIn .25s cubic-bezier(.16,1,.3,1) both;
+        }
         @keyframes panelIn {
-            from { opacity:0; transform:translateY(-6px); }
-            to   { opacity:1; transform:translateY(0); }
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .params-card {
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,.09);
+            background: rgba(12,12,20,.9);
+            backdrop-filter: blur(16px);
+            overflow: hidden;
+        }
+        .params-accent-bar {
+            height: 2px;
+            width: 100%;
         }
 
         /* ── Param inputs / selects ────────────── */
         .param-field {
-            background: rgba(14,14,22,.95);
+            background: rgba(20,20,32,.9);
             border: 1px solid rgba(255,255,255,.1);
             color: #e8e8f0;
             border-radius: 8px;
-            font-size: .78rem;
-            padding: 6px 10px;
+            font-size: .79rem;
+            padding: 7px 11px;
             font-family: 'Space Grotesk', sans-serif;
             transition: border-color .15s, box-shadow .15s;
             outline: none;
@@ -97,12 +151,12 @@
         input[type="number"].param-field::-webkit-outer-spin-button { -webkit-appearance:none; }
         input[type="number"].param-field { -moz-appearance:textfield; }
 
-        /* ── Generate prompt button ────────────── */
+        /* ── Generate button ───────────────────── */
         .gen-btn {
             background: linear-gradient(135deg, #f0a500, #e05500);
             transition: opacity .15s, transform .15s, box-shadow .15s;
         }
-        .gen-btn:hover { opacity:.88; transform:translateY(-1px); box-shadow:0 0 14px -4px rgba(240,165,0,.45); }
+        .gen-btn:hover { opacity:.88; transform:translateY(-1px); box-shadow:0 0 18px -4px rgba(240,165,0,.5); }
         .gen-btn:active { transform:translateY(0); }
 
         /* ── Markdown output ───────────────────── */
@@ -125,11 +179,16 @@
         #messages::-webkit-scrollbar-thumb { background:#2a2a3a; border-radius:2px; }
 
         /* ── Glass surfaces ────────────────────── */
-        .glass { background:rgba(16,16,22,.85); backdrop-filter:blur(12px); }
+        .glass { background:rgba(14,14,20,.88); backdrop-filter:blur(14px); }
 
         /* ── Stats bar ─────────────────────────── */
         .stat-card { transition: border-color .25s, box-shadow .25s; }
-        .stat-card:hover { border-color: rgba(255,255,255,.15) !important; }
+        .stat-card:hover { border-color: rgba(255,255,255,.18) !important; }
+        .stat-alert { animation: alertPulse 2.2s ease-in-out infinite; }
+        @keyframes alertPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,85,85,.18); }
+            50%      { box-shadow: 0 0 0 5px rgba(255,85,85,.0); }
+        }
 
         /* ── Thinking label ────────────────────── */
         #thinking-label { animation: fadeLabel 0.4s ease both; }
@@ -139,8 +198,8 @@
         }
 
         /* ── Quick query buttons ───────────────── */
-        .quick-btn { transition: background .18s, border-color .18s, transform .12s; }
-        .quick-btn:hover { background:rgba(255,255,255,.07) !important; transform:translateY(-1px); }
+        .quick-btn { transition: background .18s, border-color .18s, transform .12s, box-shadow .12s; }
+        .quick-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.3); }
         .quick-btn:active { transform:translateY(0); }
 
         /* ── Tech stack bar ────────────────────── */
@@ -170,12 +229,18 @@
             padding:3px 8px; border-radius:5px; font-size:.68rem;
             border:1px solid; width:fit-content;
         }
+
+        /* ── Dept section divider ──────────────── */
+        .section-label {
+            font-size: .62rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: #2e2e45;
+        }
     </style>
 </head>
 <body class="text-gray-100 h-screen flex flex-col overflow-hidden">
 
     <!-- ── Header ─────────────────────────────────── -->
-    <header class="glass border-b border-white/[.06] px-5 py-3 flex items-center justify-between flex-shrink-0 z-10">
+    <header class="glass border-b border-white/[.05] px-5 py-3 flex items-center justify-between flex-shrink-0 z-10">
         <div class="flex items-center gap-3">
             <div id="logo-wrap" class="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
                  style="background:#111118; border:1px solid rgba(255,255,255,.08)">
@@ -184,17 +249,30 @@
             </div>
             <div>
                 <p class="text-sm font-semibold text-white tracking-tight leading-tight">AMT AI Assistant</p>
-                <p class="text-xs leading-tight" style="color:#55556a">Advanced Media Trading — Internal Demo</p>
+                <p class="text-xs leading-tight" style="color:#44445a">Advanced Media Trading — Internal Demo</p>
             </div>
         </div>
         <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[.06] bg-white/[.03]">
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="box-shadow:0 0 6px #10d97a"></div>
-                <span class="text-xs" style="color:#55556a">GPT-4o</span>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[.05] bg-white/[.025]">
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="box-shadow:0 0 7px #10d97a; animation: dotPulse 1.8s ease-in-out infinite;"></div>
+                <span class="text-xs" style="color:#44445a">GPT-4o · Live</span>
             </div>
+            <button onclick="restartServer()" id="restart-btn"
+                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
+                    style="color:#44445a">
+                ↺ Restart
+            </button>
+            <a href="/domains"
+               class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
+               style="color:#44445a; text-decoration:none">AI Domains</a>
+            <a href="/embeddings"
+               class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors flex items-center gap-1.5"
+               style="color:#44445a; text-decoration:none">
+                <span style="font-size:.6rem">✦</span> Vector Space
+            </a>
             <button onclick="clearChat()"
-                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.08] hover:border-white/20 transition-colors"
-                    style="color:#55556a">
+                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
+                    style="color:#44445a">
                 Clear
             </button>
         </div>
@@ -202,8 +280,8 @@
 
     <!-- ── Tech Stack Bar ────────────────────────── -->
     <div class="flex items-center gap-2.5 px-5 py-2 border-b border-white/[.04] overflow-x-auto flex-shrink-0"
-         style="background:rgba(6,6,10,.7)">
-        <span class="text-xs flex-shrink-0" style="color:#2a2a3a; font-size:.62rem; letter-spacing:.08em">POWERED BY</span>
+         style="background:rgba(6,6,10,.75)">
+        <span class="section-label flex-shrink-0">Powered by</span>
         <span class="stack-badge" style="color:#00d4ff; border-color:rgba(0,212,255,.2); background:rgba(0,212,255,.06)">
             <span class="stack-dot" style="background:#00d4ff; box-shadow:0 0 5px #00d4ff"></span>LangGraph
         </span>
@@ -228,8 +306,8 @@
         <span class="stack-badge" style="color:#ff6b35; border-color:rgba(255,107,53,.2); background:rgba(255,107,53,.06)">
             <span class="stack-dot" style="background:#ff6b35; box-shadow:0 0 5px #ff6b35"></span>LangSmith
         </span>
-        <span class="stack-badge" style="color:#888898; border-color:rgba(136,136,152,.15); background:rgba(136,136,152,.04)">
-            <span class="stack-dot" style="background:#888898"></span>n8n Workflows
+        <span class="stack-badge" style="color:#7888a8; border-color:rgba(120,136,168,.15); background:rgba(120,136,168,.04)">
+            <span class="stack-dot" style="background:#7888a8"></span>n8n Workflows
         </span>
     </div>
 
@@ -237,18 +315,18 @@
 
         <!-- ── Sidebar ──────────────────────────────── -->
         <aside class="flex-shrink-0 flex flex-col p-3 gap-1.5 border-r border-white/[.05]"
-               style="width:210px; background:rgba(10,10,16,.6)">
+               style="width:214px; background:rgba(9,9,14,.7)">
 
-            <p class="text-xs uppercase tracking-widest px-2 mt-1 mb-0.5" style="color:#3a3a52; font-size:.65rem">Department</p>
+            <p class="section-label px-2 mt-1.5 mb-1">Department</p>
 
             <button onclick="setDept('sales')" id="dept-sales"
                     class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(59,126,255,.15)">📊</div>
+                         style="background:rgba(59,126,255,.14)">📊</div>
                     <div>
                         <p class="text-sm font-medium" style="color:#e8e8f0">Sales</p>
-                        <p class="text-xs" style="color:#44445a">Quotes & Proposals</p>
+                        <p class="text-xs" style="color:#3a3a58">Quotes & Proposals</p>
                     </div>
                 </div>
             </button>
@@ -257,10 +335,10 @@
                     class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(16,217,122,.12)">🚚</div>
+                         style="background:rgba(16,217,122,.11)">🚚</div>
                     <div>
                         <p class="text-sm font-medium" style="color:#e8e8f0">Distribution</p>
-                        <p class="text-xs" style="color:#44445a">Logistics & Shipping</p>
+                        <p class="text-xs" style="color:#3a3a58">Logistics & Shipping</p>
                     </div>
                 </div>
             </button>
@@ -269,10 +347,10 @@
                     class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(157,94,255,.15)">💰</div>
+                         style="background:rgba(157,94,255,.14)">💰</div>
                     <div>
                         <p class="text-sm font-medium" style="color:#e8e8f0">Finance</p>
-                        <p class="text-xs" style="color:#44445a">Invoices & VAT</p>
+                        <p class="text-xs" style="color:#3a3a58">Invoices & VAT</p>
                     </div>
                 </div>
             </button>
@@ -281,16 +359,29 @@
                     class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(255,122,47,.12)">🔧</div>
+                         style="background:rgba(255,122,47,.11)">🔧</div>
                     <div>
                         <p class="text-sm font-medium" style="color:#e8e8f0">Service</p>
-                        <p class="text-xs" style="color:#44445a">After-Sales & Repairs</p>
+                        <p class="text-xs" style="color:#3a3a58">After-Sales & Repairs</p>
                     </div>
                 </div>
             </button>
 
+            <!-- n8n status indicator -->
+            <div class="mt-3 px-2.5 py-2.5 rounded-xl border border-white/[.05]" style="background:rgba(255,255,255,.02)">
+                <p class="section-label mb-1.5">Automation</p>
+                <div class="flex items-center gap-1.5 mb-1">
+                    <div class="w-1.5 h-1.5 rounded-full" style="background:#10d97a; box-shadow:0 0 5px #10d97a"></div>
+                    <span class="text-xs" style="color:#44445a; font-size:.7rem">n8n · 5 workflows live</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full" style="background:#f0a500; box-shadow:0 0 5px #f0a500"></div>
+                    <span class="text-xs" style="color:#44445a; font-size:.7rem">Gmail · real email sends</span>
+                </div>
+            </div>
+
             <div class="mt-auto pt-3 border-t border-white/[.05] text-center">
-                <p class="text-xs" style="color:#2a2a3a; font-size:.65rem">AMT Internal Demo v1.0</p>
+                <p class="text-xs" style="color:#24243a; font-size:.63rem">AMT Internal Demo v1.0</p>
             </div>
         </aside>
 
@@ -299,14 +390,17 @@
 
             <!-- ── Live Stats Bar ─────────────────── -->
             <div id="stats-bar" class="border-b border-white/[.04] px-5 py-2.5 flex gap-3 flex-shrink-0 overflow-x-auto"
-                 style="background:rgba(10,10,16,.5)">
+                 style="background:rgba(8,8,13,.6)">
                 <!-- filled by JS -->
             </div>
 
-            <!-- Dept bar + scenarios + params panel -->
-            <div class="glass border-b border-white/[.05] px-5 pt-3 flex-shrink-0">
-                <div class="flex items-center gap-2.5 mb-2.5">
-                    <div id="dept-dot" class="w-2 h-2 rounded-full dot-sales" style="box-shadow:0 0 8px #3b7eff"></div>
+            <!-- ── Dept header + scenarios + params ── -->
+            <div class="glass border-b border-white/[.05] px-5 pt-3.5 pb-0 flex-shrink-0">
+
+                <!-- Dept header row -->
+                <div class="flex items-center gap-2.5 mb-3">
+                    <div id="dept-dot" class="w-2 h-2 rounded-full dot-sales flex-shrink-0"
+                         style="box-shadow:0 0 10px #3b7eff"></div>
                     <h2 id="dept-title" class="text-sm font-semibold" style="color:#f2f2f4">Sales Department</h2>
                     <span id="dept-badge"
                           class="text-xs px-2.5 py-0.5 rounded-full border"
@@ -314,25 +408,45 @@
                         Sales
                     </span>
                 </div>
-                <div id="scenarios" class="flex flex-wrap gap-2 pb-3"></div>
 
-                <!-- Params panel — shown when scenario is selected -->
+                <!-- Scenario cards row -->
+                <div class="mb-0.5">
+                    <p class="section-label mb-2">Scenarios</p>
+                    <div id="scenarios" class="flex gap-2.5 pb-3 overflow-x-auto" style="scrollbar-width:none"></div>
+                </div>
+
+                <!-- Params panel -->
                 <div id="params-panel">
-                    <div class="border-t border-white/[.06] pt-3 pb-3.5">
-                        <p id="params-label" class="text-xs font-semibold mb-3" style="color:#9898b8"></p>
-                        <div id="params-fields" class="flex flex-wrap gap-3 items-end"></div>
+                    <div class="pb-3.5 pt-0.5">
+                        <div class="params-card">
+                            <div id="params-accent" class="params-accent-bar"
+                                 style="background:linear-gradient(90deg,#3b7eff,#6699ff)"></div>
+                            <div class="px-4 py-3.5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <p id="params-label" class="text-xs font-semibold" style="color:#9898c0"></p>
+                                    <button onclick="closeParamsPanel()"
+                                            class="text-xs px-2 py-0.5 rounded-md border border-white/[.07] hover:border-white/[.15] transition-colors"
+                                            style="color:#44445a">✕ close</button>
+                                </div>
+                                <div id="params-fields" class="flex flex-wrap gap-3 items-end"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Quick queries / LIVE DATA -->
+                <!-- rendered by JS below scenarios div -->
             </div>
 
             <!-- Messages -->
             <div id="messages" class="flex-1 overflow-y-auto px-5 py-5 space-y-4">
                 <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
                     <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                         style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                         style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 14px -2px rgba(240,165,0,.4)">A</div>
                     <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
-                         style="background:rgba(20,20,30,.8); border:1px solid rgba(255,255,255,.07)">
-                        <p class="text-sm" style="color:#a0a0b8">Welcome to AMT AI Assistant. Select a department on the left, pick a scenario, fill in the details, and generate a prompt — or type freely below.</p>
+                         style="background:rgba(18,18,28,.85); border:1px solid rgba(255,255,255,.07)">
+                        <p class="text-sm font-medium mb-1.5" style="color:#e8e8f0">Welcome to AMT AI</p>
+                        <p class="text-xs leading-relaxed" style="color:#7070a0">Pick a department → select a scenario → fill in the details → hit <strong style="color:#f0a500">Generate Prompt</strong> to pre-fill a ready-to-send message. Or type freely below.</p>
                     </div>
                 </div>
             </div>
@@ -344,7 +458,7 @@
                         id="input"
                         placeholder="Generate from a scenario above, or type your own request..."
                         class="flex-1 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none transition-all"
-                        style="background:rgba(20,20,30,.9); border:1px solid rgba(255,255,255,.08); color:#e8e8f0;"
+                        style="background:rgba(16,16,26,.95); border:1px solid rgba(255,255,255,.08); color:#e8e8f0;"
                         rows="2"
                         onkeydown="handleKey(event)"
                     ></textarea>
@@ -353,7 +467,7 @@
                         Send →
                     </button>
                 </div>
-                <p class="text-xs mt-1.5" style="color:#2a2a3a">Enter to send · Shift+Enter for new line</p>
+                <p class="text-xs mt-1.5" style="color:#25253a">Enter to send · Shift+Enter for new line</p>
             </div>
         </div>
     </div>
@@ -370,11 +484,17 @@
             badge: 'Sales',
             badgeStyle: 'background:rgba(59,126,255,.1); color:#6699ff; border-color:rgba(59,126,255,.25)',
             dotClass: 'dot-sales',
-            dotGlow: 'box-shadow:0 0 8px #3b7eff',
+            dotGlow: 'box-shadow:0 0 10px #3b7eff',
             activeClass: 'active-sales',
+            color: '#3b7eff',
+            rgb: '59,126,255',
+            activeCardClass: 'sc-active-sales',
+            iconBg: 'rgba(59,126,255,.14)',
+            accentGradient: 'linear-gradient(90deg,#3b7eff,#6699ff)',
             scenarios: [
                 {
                     label: '🎬 Studio Kit Quote',
+                    desc: 'Custom build by budget',
                     params: [
                         { id: 'budget',      label: 'Budget (AED)',  type: 'number', placeholder: '150000' },
                         { id: 'client_type', label: 'Client Type',   type: 'select', options: ['Broadcast TV', 'Film Production', 'YouTube Creator', 'Corporate Events', 'News Agency'] },
@@ -384,6 +504,7 @@
                 },
                 {
                     label: '📷 Product Comparison',
+                    desc: 'Side-by-side specs & rec',
                     params: [
                         { id: 'product1',    label: 'Product 1',     type: 'select', options: ['DJI Inspire 3', 'DJI Matrice 350 RTK', 'Sony FX9', 'Sony Venice 2', 'RED Komodo 6K', 'ARRI ALEXA 35'] },
                         { id: 'product2',    label: 'Product 2',     type: 'select', options: ['DJI Matrice 350 RTK', 'DJI Inspire 3', 'Sony FX6', 'RED Komodo 6K', 'Blackmagic URSA', 'Canon EOS C70'] },
@@ -393,6 +514,7 @@
                 },
                 {
                     label: '✉️ Client Follow-up',
+                    desc: 'Professional proposal email',
                     params: [
                         { id: 'client_name', label: 'Client Name',       type: 'text',   placeholder: 'e.g. Ahmed Al Rashid' },
                         { id: 'company',     label: 'Company',            type: 'text',   placeholder: 'e.g. Al Arabiya TV' },
@@ -403,6 +525,7 @@
                 },
                 {
                     label: '🎥 Creator Package',
+                    desc: 'Gear bundle by platform',
                     params: [
                         { id: 'budget',   label: 'Budget (AED)', type: 'number', placeholder: '30000' },
                         { id: 'platform', label: 'Platform',     type: 'select', options: ['YouTube', 'Instagram / TikTok', 'Podcast / Audio', 'Photography'] },
@@ -417,11 +540,17 @@
             badge: 'Distribution',
             badgeStyle: 'background:rgba(16,217,122,.1); color:#22dd88; border-color:rgba(16,217,122,.25)',
             dotClass: 'dot-distribution',
-            dotGlow: 'box-shadow:0 0 8px #10d97a',
+            dotGlow: 'box-shadow:0 0 10px #10d97a',
             activeClass: 'active-distribution',
+            color: '#10d97a',
+            rgb: '16,217,122',
+            activeCardClass: 'sc-active-distribution',
+            iconBg: 'rgba(16,217,122,.11)',
+            accentGradient: 'linear-gradient(90deg,#10d97a,#22dd88)',
             scenarios: [
                 {
                     label: '📦 Supplier Summary',
+                    desc: 'Extract data from email',
                     params: [
                         { id: 'email_text', label: 'Paste Supplier Email', type: 'textarea', placeholder: 'Paste the supplier email here...' }
                     ],
@@ -429,6 +558,7 @@
                 },
                 {
                     label: '🚨 Delay Priority',
+                    desc: 'Rank & action delays',
                     params: [
                         { id: 'item1', label: 'Delayed Shipment 1', type: 'text', placeholder: 'e.g. Sony FX9 x2, client: MBC, 2 weeks late' },
                         { id: 'item2', label: 'Delayed Shipment 2', type: 'text', placeholder: 'e.g. DJI Inspire 3 x1, client: production house, 1 week late' },
@@ -438,6 +568,7 @@
                 },
                 {
                     label: '📝 Supplier Response',
+                    desc: 'Firm escalation draft',
                     params: [
                         { id: 'supplier',       label: 'Supplier',       type: 'text',   placeholder: 'e.g. DJI MENA' },
                         { id: 'order_details',  label: 'Order Details',  type: 'text',   placeholder: 'e.g. Order #DJI-9901, 8x Inspire 3' },
@@ -447,6 +578,7 @@
                 },
                 {
                     label: '📋 Customs Checklist',
+                    desc: 'Import docs by route',
                     params: [
                         { id: 'product_type', label: 'Product Type',    type: 'select', options: ['Cinema cameras', 'Commercial drones', 'Professional audio', 'Studio lighting', 'Mixed AV equipment'] },
                         { id: 'origin',       label: 'Origin Country',  type: 'select', options: ['Japan', 'USA', 'Germany', 'China', 'UK', 'South Korea'] },
@@ -461,11 +593,17 @@
             badge: 'Finance',
             badgeStyle: 'background:rgba(157,94,255,.1); color:#bb88ff; border-color:rgba(157,94,255,.25)',
             dotClass: 'dot-finance',
-            dotGlow: 'box-shadow:0 0 8px #9d5eff',
+            dotGlow: 'box-shadow:0 0 10px #9d5eff',
             activeClass: 'active-finance',
+            color: '#9d5eff',
+            rgb: '157,94,255',
+            activeCardClass: 'sc-active-finance',
+            iconBg: 'rgba(157,94,255,.14)',
+            accentGradient: 'linear-gradient(90deg,#9d5eff,#bb88ff)',
             scenarios: [
                 {
                     label: '🧾 Invoice Processor',
+                    desc: 'Convert & apply local VAT',
                     params: [
                         { id: 'supplier',  label: 'Supplier',            type: 'text',   placeholder: 'e.g. Manfrotto Italy' },
                         { id: 'amount',    label: 'Invoice Total',       type: 'number', placeholder: 'e.g. 24500' },
@@ -476,6 +614,7 @@
                 },
                 {
                     label: '🇸🇦 KSA VAT',
+                    desc: '15% Saudi breakdown',
                     params: [
                         { id: 'items',    label: 'Items (brief)',  type: 'text',   placeholder: 'e.g. Sony FX6 x2, Sennheiser EW x4' },
                         { id: 'subtotal', label: 'Subtotal (AED)', type: 'number', placeholder: 'e.g. 40400' }
@@ -484,6 +623,7 @@
                 },
                 {
                     label: '💱 Margin Calculator',
+                    desc: 'Sell price with target margin',
                     params: [
                         { id: 'cost_usd', label: 'Supplier Cost (USD)', type: 'number', placeholder: 'e.g. 45000' },
                         { id: 'cost_eur', label: 'Additional Cost (EUR)', type: 'number', placeholder: '0 if none' },
@@ -493,6 +633,7 @@
                 },
                 {
                     label: '📊 Branch Comparison',
+                    desc: 'Cross-currency revenue',
                     params: [
                         { id: 'dubai',  label: 'Dubai Revenue (AED)', type: 'number', placeholder: 'e.g. 2400000' },
                         { id: 'riyadh', label: 'Riyadh Revenue (SAR)', type: 'number', placeholder: 'e.g. 1100000' },
@@ -507,11 +648,17 @@
             badge: 'Service',
             badgeStyle: 'background:rgba(255,122,47,.1); color:#ff9955; border-color:rgba(255,122,47,.25)',
             dotClass: 'dot-service',
-            dotGlow: 'box-shadow:0 0 8px #ff7a2f',
+            dotGlow: 'box-shadow:0 0 10px #ff7a2f',
             activeClass: 'active-service',
+            color: '#ff7a2f',
+            rgb: '255,122,47',
+            activeCardClass: 'sc-active-service',
+            iconBg: 'rgba(255,122,47,.11)',
+            accentGradient: 'linear-gradient(90deg,#ff7a2f,#ff9955)',
             scenarios: [
                 {
                     label: '📬 Customer Update',
+                    desc: 'Empathetic status email',
                     params: [
                         { id: 'customer', label: 'Customer Name', type: 'text',   placeholder: 'e.g. Khalid Mansour' },
                         { id: 'brand',    label: 'Brand',         type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Manfrotto', 'Profoto', 'Sennheiser'] },
@@ -522,6 +669,7 @@
                 },
                 {
                     label: '🔍 Repair Triage',
+                    desc: 'Diagnose & route repair',
                     params: [
                         { id: 'brand', label: 'Brand',            type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
                         { id: 'model', label: 'Model',            type: 'text',   placeholder: 'e.g. FX9' },
@@ -532,6 +680,7 @@
                 },
                 {
                     label: '📋 Service Ticket',
+                    desc: 'Professional intake form',
                     params: [
                         { id: 'company',      label: 'Customer / Company',  type: 'text',   placeholder: 'e.g. Pulse Films LLC' },
                         { id: 'brand',        label: 'Brand',               type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
@@ -542,6 +691,7 @@
                 },
                 {
                     label: '⚠️ Warranty Guidance',
+                    desc: 'Policy options for customer',
                     params: [
                         { id: 'brand',   label: 'Brand',                  type: 'select', options: ['DJI', 'Sony Professional', 'Hasselblad', 'RED', 'Profoto', 'Sennheiser', 'Manfrotto', 'Atomos'] },
                         { id: 'product', label: 'Product',                type: 'text',   placeholder: 'e.g. X2D 100C' },
@@ -566,7 +716,7 @@
         document.getElementById(`dept-${dept}`).classList.add(c.activeClass);
 
         const dot = document.getElementById('dept-dot');
-        dot.className = `w-2 h-2 rounded-full ${c.dotClass}`;
+        dot.className = `w-2 h-2 rounded-full ${c.dotClass} flex-shrink-0`;
         dot.style.cssText = c.dotGlow;
 
         document.getElementById('dept-title').textContent = c.title;
@@ -574,14 +724,21 @@
         badge.textContent = c.badge;
         badge.style.cssText = c.badgeStyle;
 
+        // Render scenario cards
         document.getElementById('scenarios').innerHTML = c.scenarios.map((s, i) =>
-            `<button onclick="useScenario(${i})"
-                     id="scenario-btn-${i}"
-                     class="scenario-btn text-xs px-3 py-1.5 rounded-full border"
-                     style="border-color:rgba(255,255,255,.1); color:#666680; background:rgba(255,255,255,.03)">
-                ${s.label}
+            `<button onclick="useScenario(${i})" id="scenario-btn-${i}" class="scenario-card">
+                <div class="sc-icon" style="background:${c.iconBg}; font-size:16px">${s.label.split(' ')[0]}</div>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold leading-tight mb-0.5" style="color:#d8d8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                        ${s.label.slice(s.label.indexOf(' ') + 1)}
+                    </p>
+                    <p class="text-xs leading-tight" style="color:#44445a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${s.desc}</p>
+                </div>
             </button>`
         ).join('');
+
+        // Update params accent color
+        document.getElementById('params-accent').style.background = c.accentGradient;
     }
 
     function useScenario(i) {
@@ -590,8 +747,12 @@
             return;
         }
         activeScenarioIdx = i;
-        document.querySelectorAll('.scenario-btn').forEach((b, idx) => {
-            b.classList.toggle('scenario-active', idx === i);
+        const c = deptConfig[currentDept];
+
+        document.querySelectorAll('.scenario-card').forEach((b, idx) => {
+            // Remove all active classes
+            ['sc-active-sales','sc-active-distribution','sc-active-finance','sc-active-service'].forEach(cls => b.classList.remove(cls));
+            if (idx === i) b.classList.add(c.activeCardClass);
         });
         renderParamsPanel(currentScenarios[i]);
     }
@@ -599,29 +760,29 @@
     function renderParamsPanel(scenario) {
         const panel = document.getElementById('params-panel');
         panel.classList.remove('visible');
-        void panel.offsetWidth; // force reflow to restart animation
+        void panel.offsetWidth;
 
         document.getElementById('params-label').textContent = scenario.label;
 
         const fields = document.getElementById('params-fields');
         fields.innerHTML = scenario.params.map(p => {
             if (p.type === 'select') {
-                return `<div class="flex flex-col gap-1">
-                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
-                    <select id="param-${p.id}" class="param-field" style="min-width:145px">
+                return `<div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
+                    <select id="param-${p.id}" class="param-field" style="min-width:148px">
                         ${p.options.map(o => `<option>${o}</option>`).join('')}
                     </select>
                 </div>`;
             } else if (p.type === 'textarea') {
-                return `<div class="flex flex-col gap-1 w-full">
-                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
+                return `<div class="flex flex-col gap-1.5 w-full">
+                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
                     <textarea id="param-${p.id}" class="param-field w-full resize-none" rows="3"
                               placeholder="${p.placeholder || ''}"></textarea>
                 </div>`;
             } else {
-                const w = p.type === 'number' ? '110px' : '165px';
-                return `<div class="flex flex-col gap-1">
-                    <label class="text-xs" style="color:#55556a; font-size:.7rem">${p.label}</label>
+                const w = p.type === 'number' ? '115px' : '170px';
+                return `<div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
                     <input id="param-${p.id}" type="${p.type}" class="param-field"
                            style="min-width:${w}" placeholder="${p.placeholder || ''}" />
                 </div>`;
@@ -629,8 +790,8 @@
         }).join('');
 
         fields.innerHTML += `<button onclick="buildPrompt()"
-            class="gen-btn self-end text-xs px-4 py-2 rounded-lg font-semibold text-black flex-shrink-0">
-            Generate Prompt →
+            class="gen-btn self-end text-xs px-5 py-2.5 rounded-xl font-semibold text-black flex-shrink-0 flex items-center gap-2">
+            <span>Generate Prompt</span><span style="opacity:.8">→</span>
         </button>`;
 
         panel.classList.add('visible');
@@ -639,7 +800,9 @@
     function closeParamsPanel() {
         activeScenarioIdx = -1;
         document.getElementById('params-panel').classList.remove('visible');
-        document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('scenario-active'));
+        document.querySelectorAll('.scenario-card').forEach(b => {
+            ['sc-active-sales','sc-active-distribution','sc-active-finance','sc-active-service'].forEach(cls => b.classList.remove(cls));
+        });
     }
 
     function buildPrompt() {
@@ -672,6 +835,7 @@
         'SQLite':                { color: '#4088ff', bg: 'rgba(64,136,255,.08)',  border: 'rgba(64,136,255,.2)'  },
         'GPT-4o':                { color: '#f0a500', bg: 'rgba(240,165,0,.08)',   border: 'rgba(240,165,0,.2)'   },
         'Pandas':                { color: '#e040fb', bg: 'rgba(224,64,251,.08)',  border: 'rgba(224,64,251,.2)'  },
+        'n8n':                   { color: '#e87d3e', bg: 'rgba(232,125,62,.08)',  border: 'rgba(232,125,62,.2)'  },
         'default':               { color: '#888898', bg: 'rgba(136,136,152,.06)', border: 'rgba(136,136,152,.15)'},
     };
 
@@ -681,9 +845,9 @@
         const steps = tools.map(t => {
             const fw = FW_COLORS[t.framework] || FW_COLORS['default'];
             return `<div class="trace-step" style="color:${fw.color}; background:${fw.bg}; border-color:${fw.border}">
-                <span style="opacity:.6; font-size:.6rem">▶</span>
-                <span style="color:${fw.color}; opacity:.8; font-size:.6rem">${esc(t.framework)}</span>
-                <span style="color:#555570; font-size:.6rem">·</span>
+                <span style="opacity:.5; font-size:.6rem">▶</span>
+                <span style="color:${fw.color}; opacity:.75; font-size:.6rem">${esc(t.framework)}</span>
+                <span style="color:#444458; font-size:.6rem">·</span>
                 <span style="color:#aaaacc; font-size:.68rem">${esc(t.label)}</span>
             </div>`;
         }).join('');
@@ -691,7 +855,7 @@
         return `<div class="mt-3 pt-2.5 border-t border-white/[.05]">
             <button class="trace-toggle" onclick="toggleTrace('${uid}')">
                 <span id="${uid}_arrow" style="font-size:.6rem">▶</span>
-                <span>${tools.length} tools fired</span>
+                <span>${tools.length} tool${tools.length > 1 ? 's' : ''} fired</span>
             </button>
             <div id="${uid}" class="trace-panel">${steps}</div>
         </div>`;
@@ -712,17 +876,17 @@
         if (role === 'user') {
             div.innerHTML = `
                 <div class="w-7 h-7 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0"
-                     style="background:#222232; color:#8888a8">W</div>
+                     style="background:#1e1e30; border:1px solid rgba(255,255,255,.08); color:#6868a0">W</div>
                 <div class="rounded-2xl rounded-tr-sm px-4 py-3 max-w-lg"
-                     style="background:rgba(240,165,0,.1); border:1px solid rgba(240,165,0,.2)">
+                     style="background:rgba(240,165,0,.09); border:1px solid rgba(240,165,0,.2)">
                     <p class="text-sm whitespace-pre-wrap" style="color:#e8e8f0">${esc(content)}</p>
                 </div>`;
         } else {
             div.innerHTML = `
                 <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                     style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                     style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 12px -2px rgba(240,165,0,.35)">A</div>
                 <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-2xl md-body"
-                     style="background:rgba(18,18,28,.9); border:1px solid rgba(255,255,255,.07)">
+                     style="background:rgba(16,16,26,.92); border:1px solid rgba(255,255,255,.07)">
                     ${marked.parse(content)}
                     ${buildTraceHtml(tools)}
                 </div>`;
@@ -747,9 +911,9 @@
         div.className = 'flex items-start gap-3';
         div.innerHTML = `
             <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                 style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                 style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 12px -2px rgba(240,165,0,.35)">A</div>
             <div class="rounded-2xl rounded-tl-sm px-4 py-3"
-                 style="background:rgba(18,18,28,.9); border:1px solid rgba(255,255,255,.07)">
+                 style="background:rgba(16,16,26,.92); border:1px solid rgba(255,255,255,.07)">
                 <div class="flex gap-2 items-center h-5">
                     <div class="flex gap-1.5 items-center">
                         <div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -794,14 +958,16 @@
     }
 
     function clearChat() {
+        fetch('/api/reset', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ department: currentDept }) });
         const box = document.getElementById('messages');
         box.innerHTML = `
             <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
                 <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                     style="background:linear-gradient(135deg,#f0a500,#e05500)">A</div>
+                     style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 14px -2px rgba(240,165,0,.4)">A</div>
                 <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
-                     style="background:rgba(20,20,30,.8); border:1px solid rgba(255,255,255,.07)">
-                    <p class="text-sm" style="color:#a0a0b8">Welcome to AMT AI Assistant. Select a department on the left, pick a scenario, fill in the details, and generate a prompt — or type freely below.</p>
+                     style="background:rgba(18,18,28,.85); border:1px solid rgba(255,255,255,.07)">
+                    <p class="text-sm font-medium mb-1.5" style="color:#e8e8f0">Welcome to AMT AI</p>
+                    <p class="text-xs leading-relaxed" style="color:#7070a0">Pick a department → select a scenario → fill in the details → hit <strong style="color:#f0a500">Generate Prompt</strong> to pre-fill a ready-to-send message. Or type freely below.</p>
                 </div>
             </div>`;
     }
@@ -809,43 +975,42 @@
     // ── Quick demo queries per dept ──────────────────────────────────────────
     const quickQueries = {
         sales: [
-            { label: '📦 Check DJI stock',         q: 'What is our current stock level for all DJI products?' },
-            { label: '💰 Quote: Cinema kit',        q: 'Build a cinema camera kit quote under AED 100,000 for a film production client.' },
-            { label: '📋 MBC Group orders',         q: 'Pull up the full order history for MBC Group.' },
+            { label: '📦 DJI stock levels',    q: 'What is our current stock level for all DJI products?' },
+            { label: '💰 Cinema kit AED 100k', q: 'Build a cinema camera kit quote under AED 100,000 for a film production client.' },
+            { label: '📋 MBC Group orders',    q: 'Pull up the full order history for MBC Group.' },
         ],
         distribution: [
-            { label: '🚨 Delayed shipments',        q: 'Show me all delayed or customs-held shipments right now.' },
-            { label: '📉 Low stock alert',          q: 'Which products are running critically low on stock?' },
-            { label: '⏳ Pending orders',           q: 'Show all orders that are pending or confirmed but not yet shipped.' },
+            { label: '🚨 Delayed shipments',   q: 'Show me all delayed or customs-held shipments right now.' },
+            { label: '📉 Low stock alert',     q: 'Which products are running critically low on stock?' },
+            { label: '📦 Open purchase orders', q: 'Show all open purchase orders and their delivery status.' },
         ],
         finance: [
-            { label: '🔴 Overdue invoices',         q: 'Show me all overdue invoices.' },
-            { label: '💵 2026 revenue summary',     q: 'Give me a full revenue and outstanding balance summary for 2026.' },
-            { label: '👤 KSA Drone Solutions',      q: 'What is the outstanding balance for KSA Drone Solutions?' },
+            { label: '🔴 Overdue invoices',    q: 'Show me all overdue invoices.' },
+            { label: '💵 2026 revenue',        q: 'Give me a full revenue and outstanding balance summary for 2026.' },
+            { label: '👤 KSA Drone balance',   q: 'What is the outstanding balance for KSA Drone Solutions?' },
         ],
         service: [
-            { label: '🔧 All open tickets',         q: 'Show me all open service and repair tickets.' },
-            { label: '✅ Ready for collection',     q: 'Which devices are repaired and ready for customer collection?' },
-            { label: '📬 Log new repair',           q: 'Log a new repair ticket for Rami Yousef — DJI RS 4 Pro, serial RS4P-XX0099, motor overheating on axis 2, out of warranty.' },
+            { label: '🔧 All open tickets',    q: 'Show me all open service and repair tickets.' },
+            { label: '✅ Ready for pickup',    q: 'Which devices are repaired and ready for customer collection?' },
+            { label: '📬 Log new repair',      q: 'Log a new repair ticket for Rami Yousef — DJI RS 4 Pro, serial RS4P-XX0099, motor overheating on axis 2, out of warranty.' },
         ],
     };
 
     function renderQuickQueries(dept) {
         const queries = quickQueries[dept] || [];
-        const color = { sales:'#3b7eff', distribution:'#10d97a', finance:'#9d5eff', service:'#ff7a2f' }[dept];
+        const c = deptConfig[dept];
         const scenariosEl = document.getElementById('scenarios');
 
-        // Remove any existing quick section
         document.getElementById('quick-section')?.remove();
 
         const wrap = document.createElement('div');
         wrap.id = 'quick-section';
-        wrap.className = 'flex flex-wrap gap-2 pb-3 border-t border-white/[.04] pt-2.5 mt-0.5 w-full';
-        wrap.innerHTML = `<span class="text-xs self-center mr-1 flex-shrink-0" style="color:#33334a; font-size:.65rem">LIVE DATA</span>` +
+        wrap.className = 'flex flex-wrap gap-2 py-2.5 border-t border-white/[.04] w-full';
+        wrap.innerHTML = `<span class="section-label self-center mr-1 flex-shrink-0">Live Data</span>` +
             queries.map(q => `
                 <button onclick="fireQuery(${JSON.stringify(q.q).replace(/'/g,"\\'")})"
-                        class="quick-btn text-xs px-3 py-1.5 rounded-full border flex-shrink-0"
-                        style="border-color:rgba(${hexToRgb(color)},.25); color:${color}; background:rgba(${hexToRgb(color)},.06)">
+                        class="quick-btn text-xs px-3 py-1.5 rounded-full border flex-shrink-0 font-medium"
+                        style="border-color:rgba(${c.rgb},.28); color:${c.color}; background:rgba(${c.rgb},.06)">
                     ${q.label}
                 </button>`).join('');
         scenariosEl.parentNode.insertBefore(wrap, scenariosEl.nextSibling);
@@ -878,12 +1043,12 @@
         const bar = document.getElementById('stats-bar');
         if (!allStats) return;
         const s = allStats[dept];
-        const color = { sales:'#3b7eff', distribution:'#10d97a', finance:'#9d5eff', service:'#ff7a2f' }[dept];
+        const c = deptConfig[dept];
 
         const cards = {
             sales: [
-                { icon:'📦', value: s.products,      label: 'Products' },
-                { icon:'📋', value: s.orders_active,  label: 'Active Orders' },
+                { icon:'📦', value: s.products,      label: 'Products in Catalog' },
+                { icon:'📋', value: s.orders_active,  label: 'Active Orders', alert: false },
                 { icon:'🏆', value: s.top_brand,      label: 'Top Brand' },
             ],
             distribution: [
@@ -903,14 +1068,15 @@
             ],
         }[dept] || [];
 
-        bar.innerHTML = cards.map(c => {
-            const alertColor = c.alert ? '#ff5555' : color;
-            return `<div class="stat-card flex items-center gap-2.5 px-3 py-1.5 rounded-xl border flex-shrink-0"
-                         style="background:rgba(${hexToRgb(alertColor)},.06); border-color:rgba(${hexToRgb(alertColor)},.2)">
-                <span class="text-base leading-none">${c.icon}</span>
+        bar.innerHTML = cards.map(card => {
+            const clr = card.alert ? '#ff5555' : c.color;
+            const rgb = card.alert ? '255,85,85' : c.rgb;
+            return `<div class="stat-card flex items-center gap-2.5 px-3.5 py-2 rounded-xl border flex-shrink-0 ${card.alert ? 'stat-alert' : ''}"
+                         style="background:rgba(${rgb},.06); border-color:rgba(${rgb},.22)">
+                <span class="text-base leading-none">${card.icon}</span>
                 <div>
-                    <p class="text-sm font-semibold leading-tight" style="color:${alertColor}">${c.value}</p>
-                    <p class="text-xs leading-tight" style="color:#33334a; font-size:.65rem">${c.label}</p>
+                    <p class="text-sm font-bold leading-tight" style="color:${clr}">${card.value}</p>
+                    <p class="leading-tight" style="color:#2e2e48; font-size:.62rem; letter-spacing:.02em">${card.label}</p>
                 </div>
             </div>`;
         }).join('');
@@ -923,6 +1089,23 @@
         renderStats(dept);
         renderQuickQueries(dept);
     };
+
+    async function restartServer() {
+        const btn = document.getElementById('restart-btn');
+        btn.textContent = '↺ Restarting…';
+        btn.style.color = '#f0a500';
+        btn.disabled = true;
+        await fetch('/api/restart', { method: 'POST' });
+        setTimeout(() => {
+            const poll = setInterval(async () => {
+                try {
+                    await fetch('/api/stats');
+                    clearInterval(poll);
+                    location.reload();
+                } catch {}
+            }, 500);
+        }, 800);
+    }
 
     // Init
     setDept('sales');
