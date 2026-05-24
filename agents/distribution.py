@@ -26,12 +26,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_shipments",
-            "description": "Get inbound shipment status from suppliers. Filter by status or supplier name.",
+            "description": "Get inbound shipment status from suppliers. Filter by status, supplier name, or overdue. Use overdue_only=true for delayed/late delivery questions. Use supplier to find shipments from a specific supplier like 'DJI', 'Sony', 'Zeiss'.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "status": {"type": "string", "description": "Filter by: ordered/in_transit/customs/delivered/delayed. Leave empty for all."},
-                    "supplier": {"type": "string", "description": "Filter by supplier name. Leave empty for all."}
+                    "supplier": {"type": "string", "description": "Filter by supplier name, e.g. 'DJI', 'Sony', 'Profoto', 'Zeiss'"},
+                    "overdue_only": {"type": "boolean", "description": "If true, return only shipments where ETA has passed but not yet delivered — catches late deliveries even if not marked 'delayed'"}
                 }
             }
         }
@@ -75,19 +76,24 @@ TOOLS = [
 ]
 
 
-def get_shipments(status: str = None, supplier: str = None) -> list:
-    trace.log("get_shipments", "SQLite", f"Shipments query — status: {status or 'all'}")
+def get_shipments(status: str = None, supplier: str = None, overdue_only: bool = False) -> list:
+    label = f"Shipments query — status: {status or 'all'}" + (f", supplier: {supplier}" if supplier else "") + (" [overdue]" if overdue_only else "")
+    trace.log("get_shipments", "SQLite", label)
     sql = """
         SELECT s.shipment_ref, s.supplier, s.origin_country,
                s.shipped_date, s.eta, s.status,
                s.carrier, s.tracking_number, s.notes,
-               po.po_ref, po.total_usd
+               po.po_ref, po.total_usd,
+               CASE WHEN s.eta < date('now') AND s.status NOT IN ('delivered','cancelled')
+                    THEN 'YES' ELSE 'NO' END AS is_overdue
         FROM shipments s
         LEFT JOIN purchase_orders po ON po.id = s.order_id
         WHERE 1=1
     """
     params = []
-    if status:
+    if overdue_only:
+        sql += " AND s.eta < date('now') AND s.status NOT IN ('delivered','cancelled')"
+    elif status:
         sql += " AND s.status = ?"
         params.append(status)
     if supplier:

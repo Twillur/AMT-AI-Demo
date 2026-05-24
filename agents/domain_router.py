@@ -20,7 +20,8 @@ DOMAIN_DOCS = {
     ),
     "distribution": (
         "Track inbound shipments arriving from suppliers — not customer sales orders. "
-        "Flag delays, customs holds, and late deliveries on inbound cargo. "
+        "Shipments from DJI, Sony, RED, Profoto, Zeiss, Sennheiser, Atomos — supplier shipment tracking. "
+        "Flag delays, customs holds, and late deliveries on inbound cargo. Overdue shipments past ETA. "
         "Check supplier purchase orders for procurement. Monitor warehouse inventory reorder thresholds. "
         "Identify which supplier is behind on delivery schedule. Procurement, logistics, freight, ETA, carrier. "
         "Low stock alerts, reorder emails, inventory levels, warehouse stock counts."
@@ -41,7 +42,7 @@ DOMAIN_DOCS = {
 
 
 def _get_or_build_collection():
-    col_name = "amt_domains_v4"
+    col_name = "amt_domains_v5"
     existing = [c.name for c in _chroma.list_collections()]
     if col_name in existing:
         return _chroma.get_collection(col_name)
