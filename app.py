@@ -746,5 +746,20 @@ def reset():
     return jsonify({"ok": True})
 
 
+@app.route("/api/clear-cache", methods=["POST"])
+@login_required
+def clear_cache():
+    try:
+        from agents.semantic_cache import _chroma, _COL_NAME
+        existing = [c.name for c in _chroma.list_collections()]
+        if _COL_NAME in existing:
+            _chroma.delete_collection(_COL_NAME)
+        import agents.semantic_cache as sc
+        sc._col = None  # reset module-level singleton
+        return jsonify({"ok": True, "cleared": _COL_NAME})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

@@ -5,7 +5,7 @@ from openai import OpenAI
 _client  = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 _chroma  = chromadb.PersistentClient(path="db/chroma")
 _THRESHOLD = 0.94  # cosine similarity — above this = cache hit
-_COL_NAME  = "amt_response_cache_v4"
+_COL_NAME  = "amt_response_cache_v5"
 
 _col = None
 
