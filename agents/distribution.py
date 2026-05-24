@@ -130,9 +130,10 @@ def get_purchase_orders(status: str = None, supplier: str = None) -> list:
 def get_inventory_levels(category: str = None, low_stock_only: bool = False) -> list:
     trace.log("get_inventory_levels", "SQLite", f"Inventory — category: {category or 'all'}, low_stock: {low_stock_only}")
     sql = """
-        SELECT p.sku, p.brand, p.model, p.category,
+        SELECT p.sku, p.brand, p.model, p.category, p.price_aed,
                i.qty_on_hand, i.qty_reserved,
-               (i.qty_on_hand - i.qty_reserved) AS qty_available
+               (i.qty_on_hand - i.qty_reserved) AS qty_available,
+               ROUND(p.price_aed * (i.qty_on_hand - i.qty_reserved), 0) AS total_value_aed
         FROM products p JOIN inventory i ON i.product_id = p.id
         WHERE 1=1
     """
@@ -175,6 +176,7 @@ TOOL SELECTION RULES:
 - "delayed" / "late" / "overdue" → get_shipments(overdue_only=True)
 - "shipments from [supplier]" → get_shipments(supplier="[supplier]")
 - "lighting inventory" / "camera inventory" / "[category] stock" → get_inventory_levels(category="[category]")
+- "total inventory value" / "stock value in AED" → get_inventory_levels() — sum the total_value_aed column across all rows
 
 When drafting reorder emails: address the actual supplier by name (e.g. "RED Digital Cinema" for RED products), include the specific product SKU and model, and fill in AMT's details. Never use placeholder text like [Supplier Name].
 

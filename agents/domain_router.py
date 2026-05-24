@@ -75,11 +75,13 @@ _collection = None
 _KEYWORD_RULES = [
     # Service — must come before Sales so "warranty" and "ticket" win
     (["svc-", "ticket", "warranty", "repair", "service ticket", "in repair",
-      "ready to collect", "close ticket", "update ticket", "in warranty",
+      "ready to collect", "ready for collection", "ready to be collected",
+      "close ticket", "update ticket", "in warranty",
       "out of warranty", "diagnosis", "awaiting parts"], "service"),
     # Distribution — supplier POs and inbound logistics
     (["purchase order", "inbound shipment", "reorder email", "supplier",
-      "customs hold", "eta", "cargo", "freight", "po-20"], "distribution"),
+      "customs hold", "eta", "cargo", "freight", "po-20",
+      "inventory value", "stock value", "value of inventory", "total inventory"], "distribution"),
     # Finance — invoices and payments
     (["invoice", "overdue", "accounts receivable", "vat", "aging report",
       "collection rate", "debtor", "unpaid", "payment status"], "finance"),
