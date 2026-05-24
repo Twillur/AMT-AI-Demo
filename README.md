@@ -2,6 +2,8 @@
 
 > AI-powered department assistant for **Advanced Media Trading LLC** — the largest professional AV equipment distributor in MENA.
 
+**[github.com/Twillur/AMT-AI-Demo](https://github.com/Twillur/AMT-AI-Demo)** &nbsp;·&nbsp; [View Presentation](AMT_Presentation.html)
+
 Built as a live internal demo showing non-technical department heads exactly how AI simplifies their daily work. No buzzwords. Real data, real queries, real answers.
 
 ---
