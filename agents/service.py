@@ -125,7 +125,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "update_ticket_status",
-            "description": "Update the status of an existing service ticket.",
+            "description": "Update the status of an existing service ticket. Use when told to close, progress, or update a ticket by ref number.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -134,6 +134,21 @@ TOOLS = [
                     "notes": {"type": "string"}
                 },
                 "required": ["ticket_ref", "new_status"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_warranty",
+            "description": "Check warranty eligibility for a customer's product. Use when asked about warranty status, whether a device is in warranty, or warranty expiry.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_name": {"type": "string", "description": "Customer name to look up"},
+                    "product_model": {"type": "string", "description": "Product model name, e.g. 'Mavic 3 Pro'"}
+                },
+                "required": []
             }
         }
     }
@@ -263,23 +278,48 @@ def update_ticket_status(ticket_ref: str, new_status: str, notes: str = None) ->
     return {"ticket_ref": ticket_ref, "new_status": new_status, "updated": True}
 
 
+def check_warranty(customer_name: str = None, product_model: str = None) -> list:
+    trace.log("check_warranty", "SQLite", f"Warranty check — customer: {customer_name or 'any'}, product: {product_model or 'any'}")
+    sql = """
+        SELECT c.name AS customer, c.company, p.brand, p.model,
+               w.serial_number, w.purchase_date, w.warranty_expiry,
+               CASE WHEN w.warranty_expiry >= date('now') THEN 'In Warranty' ELSE 'Out of Warranty' END AS warranty_status,
+               CAST(julianday(w.warranty_expiry) - julianday('now') AS INTEGER) AS days_remaining
+        FROM warranty_registrations w
+        JOIN products p ON p.id = w.product_id
+        LEFT JOIN customers c ON c.id = w.customer_id
+        WHERE 1=1
+    """
+    params = []
+    if customer_name:
+        sql += " AND c.name LIKE ?"
+        params.append(f"%{customer_name}%")
+    if product_model:
+        sql += " AND p.model LIKE ?"
+        params.append(f"%{product_model}%")
+    sql += " ORDER BY w.warranty_expiry ASC"
+    return query(sql, tuple(params))
+
+
 TOOL_MAP = {
     "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "get_service_tickets": get_service_tickets,
     "get_ticket_by_customer": get_ticket_by_customer,
     "create_service_ticket": create_service_ticket,
     "update_ticket_status": update_ticket_status,
+    "check_warranty": check_warranty,
 }
 
 SYSTEM = """You are an AI assistant for AMT's service and after-sales department. AMT is an authorized service center for DJI, Sony Professional, Profoto, Manfrotto, Hasselblad, Atomos, and other brands.
 
-You have live access to the service ticketing system. You can view, create, and update repair tickets.
+You have live access to the service ticketing system. You can view, create, update repair tickets, and check warranty status.
 
-Your job:
-- Show open service tickets and their status
-- Log new repair requests
-- Update ticket statuses as work progresses
-- Draft professional, empathetic customer update emails
+TOOL SELECTION RULES:
+- "update ticket" / "close ticket" / "mark as ready" / "status update" → update_ticket_status(ticket_ref, new_status)
+- "warranty" / "in warranty" / "warranty check" / "is it covered" → check_warranty(customer_name, product_model)
+- "tickets for [customer]" → get_ticket_by_customer
+- "log ticket" / "new repair" / "customer brought in" → create_service_ticket
+- "open tickets" / "ticket status" / "all repairs" → get_service_tickets
 
 For customer emails always include: issue summary, current status, next steps, estimated completion. Sign off as "AMT Service Team"."""
 

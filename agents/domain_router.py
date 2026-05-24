@@ -36,15 +36,16 @@ DOMAIN_DOCS = {
         "Currency conversion for AED. Payment status, invoice due dates, overdue amounts."
     ),
     "service": (
-        "Log, view, and update device repair tickets. Check warranty eligibility. Triage a technical fault. "
-        "Write professional customer update emails about repair status. Create new service intake forms. "
-        "Track which devices are in repair, awaiting parts, diagnosed, or ready for collection."
+        "Log, view, and update device repair tickets. Update ticket status — close ticket, mark ready, mark diagnosed, mark in repair. "
+        "Check warranty eligibility, warranty status, is product in warranty, warranty expiry date. "
+        "Triage a technical fault. Write professional customer update emails about repair status. "
+        "Create new service intake forms. Track which devices are in repair, awaiting parts, diagnosed, or ready for collection."
     ),
 }
 
 
 def _get_or_build_collection():
-    col_name = "amt_domains_v7"
+    col_name = "amt_domains_v8"
     existing = [c.name for c in _chroma.list_collections()]
     if col_name in existing:
         return _chroma.get_collection(col_name)
