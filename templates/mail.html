@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inbox — AMT AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+:root {
+  --bg-base:#04040a; --glass-fill:rgba(255,255,255,.028); --glass-fill-hover:rgba(255,255,255,.045);
+  --glass-border:rgba(255,255,255,.07); --glass-border-strong:rgba(255,255,255,.11);
+  --text-primary:#ececf5; --text-body:#ccccdc; --text-secondary:#7a7a9a; --text-tertiary:#565670;
+  --gold:#f0a500; --green:#10d97a;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
+  --tf:160ms cubic-bezier(.2,.6,.2,1); --t:240ms cubic-bezier(.2,.6,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg-base);color:var(--text-body);font-size:14px;line-height:1.5;}
+button,input,textarea{font-family:inherit;color:inherit;background:none;border:none;outline:none;cursor:pointer;}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+*::-webkit-scrollbar{width:6px;height:5px;}
+*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
+::selection{background:rgba(240,165,0,.3);color:var(--text-primary);}
+:focus-visible{outline:2px solid rgba(240,165,0,.5);outline-offset:2px;border-radius:6px;}
+
+.bg-stage{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-bloom{position:absolute;left:50%;top:50%;width:1400px;height:1400px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(16,80,60,.25),rgba(10,40,30,.12) 35%,rgba(4,4,10,0) 70%);filter:blur(40px);animation:bloom-drift 24s ease-in-out infinite alternate;}
+@keyframes bloom-drift{0%{transform:translate(-52%,-52%) scale(1)}100%{transform:translate(-48%,-48%) scale(1.12)}}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);opacity:.5;}
+.bg-noise{position:absolute;inset:0;opacity:.025;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+
+.app{position:relative;z-index:1;display:grid;grid-template-rows:64px 1fr;height:100vh;}
+
+/* Header */
+.header{display:flex;align-items:center;padding:0 22px;gap:16px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.55);backdrop-filter:blur(20px);}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-mark{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(240,165,0,.18),rgba(59,126,255,.18) 65%,rgba(16,217,122,.16));border:1px solid rgba(255,255,255,.09);overflow:hidden;flex-shrink:0;}
+.brand-mark img{width:24px;height:24px;object-fit:contain;}
+.brand-name{font-size:13px;font-weight:500;color:var(--text-primary);}
+.brand-sub{font-size:11px;color:var(--text-secondary);letter-spacing:.04em;text-transform:uppercase;}
+.h-gap{flex:1;}
+.page-title{font-size:14px;font-weight:500;color:var(--text-primary);display:flex;align-items:center;gap:9px;}
+.unread-badge{height:20px;min-width:20px;padding:0 6px;border-radius:999px;background:rgba(16,217,122,.15);border:1px solid rgba(16,217,122,.3);color:#6cf2ad;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:8px;border:1px solid transparent;color:var(--text-secondary);font-size:12px;font-weight:500;transition:color var(--tf),background var(--tf),border-color var(--tf);}
+.icon-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.03);border-color:var(--glass-border);}
+.icon-btn.spin svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Split layout */
+.split{display:grid;grid-template-columns:340px 1fr;height:100%;min-height:0;}
+
+/* Left pane — email list */
+.inbox-pane{display:flex;flex-direction:column;border-right:1px solid var(--glass-border);min-height:0;}
+.inbox-toolbar{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.3);}
+.inbox-search{flex:1;height:28px;padding:0 10px 0 32px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);color:var(--text-primary);font-size:12px;}
+.inbox-search::placeholder{color:var(--text-tertiary);}
+.inbox-search:focus{border-color:var(--glass-border-strong);background:rgba(255,255,255,.06);}
+.search-wrap{position:relative;flex:1;}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);pointer-events:none;}
+.filter-tabs{display:flex;gap:3px;padding:8px 12px;border-bottom:1px solid var(--glass-border);overflow-x:auto;}
+.ftab{height:26px;padding:0 11px;border-radius:999px;font-size:11px;font-weight:500;color:var(--text-secondary);border:1px solid transparent;transition:color var(--tf),background var(--tf),border-color var(--tf);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;}
+.ftab:hover{color:var(--text-body);background:rgba(255,255,255,.02);}
+.ftab.active{color:var(--text-primary);background:rgba(255,255,255,.04);border-color:var(--glass-border);}
+.ftab .fd{width:6px;height:6px;border-radius:999px;background:var(--fc);box-shadow:0 0 6px var(--fc);}
+.dept-badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 7px;border-radius:999px;font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;flex-shrink:0;}
+.dept-dot{width:5px;height:5px;border-radius:999px;}
+.mail-list{flex:1;overflow-y:auto;}
+.mail-item{display:flex;flex-direction:column;gap:4px;padding:12px 16px;border-bottom:1px solid var(--glass-border);cursor:pointer;transition:background var(--tf),opacity var(--t),transform var(--t);position:relative;}
+.mail-item:hover{background:rgba(255,255,255,.02);}
+.mail-item.active{background:rgba(16,217,122,.04);border-left:2px solid var(--green);}
+.mail-item.unread .mail-from{color:var(--text-primary);font-weight:600;}
+.mail-item.unread .mail-subject{color:var(--text-primary);}
+.mail-item.dismissing{opacity:0;transform:translateX(-18px);pointer-events:none;}
+.dismiss-btn{position:absolute;top:50%;right:10px;transform:translateY(-50%);width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:11px;color:var(--text-tertiary);opacity:0;transition:opacity var(--tf),background var(--tf),color var(--tf);}
+.dismiss-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.1);}
+.mail-item:hover .dismiss-btn{opacity:1;}
+.trash-spinner{width:10px;height:10px;border:1.5px solid rgba(255,107,107,.3);border-top-color:#ff6b6b;border-radius:999px;animation:spin .7s linear infinite;display:inline-block;}
+.unread-dot{position:absolute;left:5px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:999px;background:var(--green);box-shadow:0 0 8px var(--green);}
+.mail-row1{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mail-from{font-size:12.5px;font-weight:500;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;}
+.mail-time{font-size:10.5px;color:var(--text-tertiary);flex-shrink:0;}
+.mail-subject{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mail-preview{font-size:11px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.empty-inbox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;color:var(--text-secondary);padding:32px;}
+.empty-inbox svg{opacity:.3;}
+.empty-inbox p{font-size:13px;text-align:center;line-height:1.5;}
+
+/* Right pane — detail */
+.detail-pane{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;color:var(--text-secondary);}
+.detail-empty svg{opacity:.15;}
+.detail-empty p{font-size:13px;color:var(--text-tertiary);}
+
+.detail-header{padding:16px 22px 14px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.25);flex-shrink:0;}
+.detail-subject{font-size:16px;font-weight:500;color:var(--text-primary);letter-spacing:-.01em;margin-bottom:8px;}
+.detail-meta{display:flex;gap:14px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;}
+.detail-meta strong{color:var(--text-body);font-weight:500;}
+.detail-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.action-btn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 16px;border-radius:9px;font-size:12.5px;font-weight:500;cursor:pointer;transition:all 200ms;}
+.action-primary{background:linear-gradient(180deg,var(--green),#0aa85a);color:#001a0e;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 4px 14px rgba(16,217,122,.25);}
+.action-primary:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 6px 22px rgba(16,217,122,.35);}
+.action-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.action-secondary{background:var(--glass-fill);border:1px solid var(--glass-border);color:var(--text-body);}
+.action-secondary:hover{background:var(--glass-fill-hover);border-color:var(--glass-border-strong);color:var(--text-primary);}
+
+.detail-scroll{flex:1;overflow-y:auto;}
+.detail-body{padding:18px 22px;font-size:13px;color:var(--text-body);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+
+/* AI quote result */
+.ai-result{margin:0 22px 22px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(16,217,122,.25);animation:msg-in 380ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ai-result-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(16,217,122,.08);border-bottom:1px solid rgba(16,217,122,.15);gap:8px;}
+.ai-result-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:#6cf2ad;letter-spacing:.04em;text-transform:uppercase;flex:1;}
+.ai-result-actions{display:flex;align-items:center;gap:6px;}
+.ai-action-btn{height:26px;padding:0 11px;border-radius:7px;font-size:11.5px;font-weight:500;border:1px solid var(--glass-border);color:var(--text-body);transition:all var(--tf);display:inline-flex;align-items:center;gap:6px;}
+.ai-action-btn:hover{background:rgba(255,255,255,.05);border-color:var(--glass-border-strong);color:var(--text-primary);}
+.ai-action-btn:disabled{opacity:.45;cursor:not-allowed;}
+.ai-action-btn.editing{color:#f0a500;border-color:rgba(240,165,0,.35);background:rgba(240,165,0,.08);}
+.ai-send-btn{background:rgba(16,217,122,.1);border-color:rgba(16,217,122,.3);color:#6cf2ad;}
+.ai-send-btn:hover{background:rgba(16,217,122,.18);border-color:rgba(16,217,122,.5);color:#6cf2ad;}
+.ai-send-btn.sent{background:rgba(16,217,122,.15);color:#10d97a;border-color:rgba(16,217,122,.4);cursor:default;}
+.ai-result-close{width:22px;height:22px;border-radius:5px;color:var(--text-secondary);font-size:14px;display:grid;place-items:center;transition:color var(--tf),background var(--tf);}
+.ai-result-close:hover{color:var(--text-primary);background:rgba(255,255,255,.06);}
+.quote-frame.editing-mode{outline:1px solid rgba(240,165,0,.3);}
+.quote-frame{width:100%;border:none;display:block;background:#fff;}
+
+/* Loading spinner */
+.spinner{width:16px;height:16px;border:2px solid rgba(0,26,14,.3);border-top-color:#001a0e;border-radius:999px;animation:spin .7s linear infinite;}
+
+/* Recipients bar */
+.rec-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(4,4,10,.4);}
+.rec-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);min-width:28px;flex-shrink:0;}
+.rec-input{flex:1;background:none;border:none;color:var(--text-body);font-size:12.5px;font-family:inherit;outline:none;min-width:0;}
+.rec-input::placeholder{color:var(--text-tertiary);}
+
+/* Refine bar */
+.refine-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid rgba(255,255,255,.05);background:rgba(4,4,10,.3);}
+.refine-icon{font-size:13px;flex-shrink:0;color:var(--text-tertiary);}
+.refine-input{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:5px 10px;color:var(--text-body);font-size:12px;font-family:inherit;outline:none;transition:border-color var(--tf),background var(--tf);}
+.refine-input:focus{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05);}
+.refine-input::placeholder{color:var(--text-tertiary);}
+.refine-btn{height:28px;padding:0 12px;border-radius:7px;font-size:11.5px;font-weight:500;border:1px solid rgba(255,255,255,.1);color:var(--text-body);display:inline-flex;align-items:center;gap:5px;transition:all var(--tf);white-space:nowrap;flex-shrink:0;}
+.refine-btn:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.18);color:var(--text-primary);}
+.refine-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Error state */
+.setup-banner{margin:20px;padding:16px 20px;background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.25);border-radius:var(--radius-md);}
+.setup-banner h3{font-size:13.5px;font-weight:600;color:var(--gold);margin-bottom:8px;}
+.setup-banner p{font-size:12.5px;color:var(--text-body);line-height:1.6;}
+.setup-banner code{font-family:ui-monospace,monospace;font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;color:var(--text-primary);}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+<div class="bg-stage" aria-hidden="true">
+  <div class="bg-bloom"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-noise"></div>
+</div>
+
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">
+        <img src="/static/amt_logo.webp" alt="AMT"
+             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-weight:700;color:#f0a500;font-size:11px\'>AMT</span>'" />
+      </div>
+      <div>
+        <div class="brand-name">AMT AI Assistant</div>
+        <div class="brand-sub">Advanced Media Trading</div>
+      </div>
+    </div>
+    <div class="h-gap"></div>
+    <div class="page-title">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#10d97a" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      Inbox
+      <span class="unread-badge" id="unread-badge" style="display:none">0</span>
+    </div>
+    <div class="h-gap"></div>
+    <button class="icon-btn" id="refresh-btn" onclick="loadMail(true)">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 0-3 6.7L21 16M21 21v-5h-5"/></svg>
+      Refresh
+    </button>
+    <button class="icon-btn" onclick="location.href='/'">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
+      Back to AI
+    </button>
+  </header>
+
+  <div class="split">
+    <!-- Left: inbox list -->
+    <div class="inbox-pane">
+      <div class="inbox-toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="inbox-search" type="text" id="search-input" placeholder="Search…" oninput="filterList()">
+        </div>
+      </div>
+      <div class="filter-tabs">
+        <button class="ftab active" data-f="all" onclick="setFilter('all')">All</button>
+        <button class="ftab" data-f="sales" onclick="setFilter('sales')" style="--fc:#3b7eff"><span class="fd"></span>Sales</button>
+        <button class="ftab" data-f="distribution" onclick="setFilter('distribution')" style="--fc:#10d97a"><span class="fd"></span>Distrib.</button>
+        <button class="ftab" data-f="finance" onclick="setFilter('finance')" style="--fc:#f0a500"><span class="fd"></span>Finance</button>
+        <button class="ftab" data-f="service" onclick="setFilter('service')" style="--fc:#a855f7"><span class="fd"></span>Service</button>
+        <button class="ftab" data-f="unread" onclick="setFilter('unread')">Unread</button>
+      </div>
+      <div class="mail-list" id="mail-list">
+        <div class="empty-inbox">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          <p>Loading inbox…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: detail + AI panel -->
+    <div class="detail-pane" id="detail-pane">
+      <div class="detail-empty">
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        <p>Select an email to view it</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const DEPT_COLORS = { sales:'#3b7eff', distribution:'#10d97a', finance:'#f0a500', service:'#a855f7' };
+
+function deptBadgeHtml(dept) {
+  if (!dept) return '';
+  const c = DEPT_COLORS[dept] || '#7a7a9a';
+  const label = dept.charAt(0).toUpperCase() + dept.slice(1);
+  return `<span class="dept-badge" style="background:${c}1a;color:${c};border:1px solid ${c}40"><span class="dept-dot" style="background:${c}"></span>${label}</span>`;
+}
+
+let allMail = [];
+let dismissed = new Set();
+let currentQuoteMail = null;
+let activeFilter = 'all';
+let searchQuery = '';
+let selectedId = null;
+
+function relTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr.slice(0, 16);
+    const diff = Date.now() - d;
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (m < 1)    return 'just now';
+    if (m < 60)   return m + 'm ago';
+    if (h < 24)   return h + 'h ago';
+    if (days < 7) return d.toLocaleDateString(undefined,{weekday:'short'}) + ' ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',hour12:false});
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  } catch { return ''; }
+}
+
+function isQuoteRequest(m) {
+  const text = (m.subject + ' ' + (m.body||'')).toLowerCase();
+  return /quote|rfq|inquiry|enquiry|price|pricing|budget|proposal|bid|offer|procurement|purchase/.test(text);
+}
+
+const DEPT_BTN = {
+  sales:        { label: 'Generate Quote',           icon: '⚡', primary: true  },
+  distribution: { label: 'Draft Logistics Response', icon: '📦', primary: false },
+  finance:      { label: 'Draft Finance Response',   icon: '🧾', primary: false },
+  service:      { label: 'Draft Service Response',   icon: '🔧', primary: false },
+};
+
+async function deleteMail(id, event) {
+  if (event) event.stopPropagation();
+
+  // Animate out immediately for instant feel
+  const listEl = document.querySelector(`.mail-item[data-id="${id}"]`);
+  if (listEl) listEl.classList.add('dismissing');
+
+  // Update detail pane button if open
+  const detailBtn = document.getElementById(`delete-btn-${id}`);
+  if (detailBtn) {
+    detailBtn.disabled = true;
+    detailBtn.innerHTML = `<div class="trash-spinner"></div> Deleting…`;
+  }
+
+  try {
+    const r = await fetch('/api/delete-mail', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ uid: id })
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+  } catch(e) {
+    // Restore on failure
+    if (listEl) listEl.classList.remove('dismissing');
+    if (detailBtn) {
+      detailBtn.disabled = false;
+      detailBtn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Move to Trash`;
+    }
+    alert('Delete failed: ' + e.message);
+    return;
+  }
+
+  // Remove from local list and reset detail pane if selected
+  setTimeout(() => {
+    allMail = allMail.filter(m => m.id !== id);
+    if (selectedId === id) {
+      selectedId = null;
+      document.getElementById('detail-pane').innerHTML = `<div class="detail-empty">
+        <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        <p>Select an email to view it</p>
+      </div>`;
+    }
+    renderList();
+  }, 200);
+}
+
+function filtered() {
+  return allMail.filter(m => {
+    if (dismissed.has(m.id)) return false;
+    if (['sales','distribution','finance','service'].includes(activeFilter) && m.dept !== activeFilter) return false;
+    if (activeFilter === 'unread' && !m.unread) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!(m.from_name.toLowerCase().includes(q) || m.from_addr.toLowerCase().includes(q) || m.subject.toLowerCase().includes(q) || m.preview.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  });
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.toggle('active', t.dataset.f === f));
+  renderList();
+}
+
+function filterList() {
+  searchQuery = document.getElementById('search-input').value.trim();
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('mail-list');
+  const items = filtered();
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-inbox">
+      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+      <p>${allMail.length === 0 ? 'Inbox is empty.' : 'No emails match.'}</p>
+    </div>`;
+    return;
+  }
+  list.innerHTML = items.map(m => {
+    const dc = DEPT_COLORS[m.dept] || 'rgba(255,255,255,.06)';
+    return `
+    <div class="mail-item ${m.unread?'unread':''} ${selectedId===m.id?'active':''}"
+         onclick="openMail('${m.id}')" data-id="${m.id}"
+         style="border-left:2px solid ${dc}55">
+      ${m.unread ? '<div class="unread-dot"></div>' : ''}
+      <button class="dismiss-btn" onclick="deleteMail('${m.id}',event)" title="Move to Trash">🗑</button>
+      <div class="mail-row1">
+        <div class="mail-from">${esc(m.from_name || m.from_addr)}</div>
+        <div class="mail-time" style="display:flex;align-items:center;gap:5px;flex-shrink:0">${deptBadgeHtml(m.dept)}<span>${relTime(m.date)}</span></div>
+      </div>
+      <div class="mail-subject">${esc(m.subject)}</div>
+      <div class="mail-preview">${esc(m.preview)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openMail(id) {
+  selectedId = id;
+  const m = allMail.find(x => x.id === id);
+  if (!m) return;
+  renderList(); // update active highlight
+
+  const isQuote = m.dept === 'sales' && isQuoteRequest(m);
+  const deptBtn = m.dept ? DEPT_BTN[m.dept] : null;
+  const pane = document.getElementById('detail-pane');
+  pane.innerHTML = `
+    <div class="detail-header" style="flex-shrink:0">
+      <div class="detail-subject">${esc(m.subject)}</div>
+      <div class="detail-meta">
+        <span><strong>From:</strong> ${esc(m.from_name)} &lt;${esc(m.from_addr)}&gt;</span>
+        <span><strong>Date:</strong> ${esc(m.date)}</span>
+        ${m.dept ? `<span>${deptBadgeHtml(m.dept)}</span>` : ''}
+      </div>
+      <div class="detail-actions">
+        ${deptBtn ? `
+        <button class="action-btn ${isQuote ? 'action-primary' : 'action-secondary'}" id="ai-btn"
+          onclick="${isQuote ? `generateQuote('${id}')` : `generateResponse('${id}')`}"
+          style="${!isQuote && m.dept ? `border-color:${DEPT_COLORS[m.dept]}55;color:${DEPT_COLORS[m.dept]}` : ''}">
+          ${deptBtn.icon} ${deptBtn.label}
+        </button>` : ''}
+        <button class="action-btn action-secondary" onclick="sendToChat('${id}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Open in AI Chat
+        </button>
+        <button class="action-btn action-secondary" onclick="copyBody('${id}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+        <button class="action-btn action-secondary" id="delete-btn-${id}" style="color:#ff6b6b;border-color:rgba(255,107,107,.2)" onclick="deleteMail('${id}')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          Move to Trash
+        </button>
+      </div>
+    </div>
+    <div class="detail-scroll" id="detail-scroll">
+      <div class="detail-body" id="detail-body">${esc(m.body || '(empty)')}</div>
+      <div id="quote-result"></div>
+    </div>`;
+}
+
+function toggleEdit() {
+  const iframe = document.getElementById('quote-iframe');
+  const btn = document.getElementById('edit-quote-btn');
+  if (!iframe || !iframe.contentDocument) return;
+  const nowEditing = iframe.contentDocument.designMode !== 'on';
+  iframe.contentDocument.designMode = nowEditing ? 'on' : 'off';
+  iframe.classList.toggle('editing-mode', nowEditing);
+  btn.classList.toggle('editing', nowEditing);
+  btn.innerHTML = nowEditing
+    ? `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Done`
+    : `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> Edit`;
+  if (nowEditing) iframe.contentDocument.body.focus();
+}
+
+async function sendReply() {
+  if (!currentQuoteMail) return;
+  const iframe = document.getElementById('quote-iframe');
+  if (!iframe || !iframe.contentDocument) return;
+  iframe.contentDocument.designMode = 'off';
+  iframe.classList.remove('editing-mode');
+  const btn = document.getElementById('send-reply-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="border-color:rgba(16,217,122,.3);border-top-color:#10d97a"></div> Sending…`;
+  try {
+    const html_body = iframe.contentDocument.documentElement.outerHTML;
+    const toVal  = (document.getElementById('reply-to')?.value  || currentQuoteMail.from_addr).trim();
+    const ccVal  = (document.getElementById('reply-cc')?.value  || '').trim();
+    const bccVal = (document.getElementById('reply-bcc')?.value || '').trim();
+    const subj   = (document.getElementById('reply-subj')?.value || ('Re: ' + currentQuoteMail.subject)).trim();
+    const r = await fetch('/api/send_reply', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ to: toVal, to_name: '', subject: subj, html_body, cc: ccVal, bcc: bccVal })
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    btn.classList.add('sent');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Sent!`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg> Send Reply`;
+    alert('Send failed: ' + e.message);
+  }
+}
+
+function showAiResult(htmlContent, titleLabel, btn) {
+  const m = currentQuoteMail;
+  const toDefault   = m ? `${m.from_name ? m.from_name + ' ' : ''}<${m.from_addr}>` : '';
+  const subjDefault = m ? 'Re: ' + m.subject : '';
+  const resultEl = document.getElementById('quote-result');
+  resultEl.innerHTML = `
+    <div class="ai-result">
+      <!-- Header -->
+      <div class="ai-result-header">
+        <div class="ai-result-title">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+          ${esc(titleLabel)}
+        </div>
+        <div class="ai-result-actions">
+          <button class="ai-action-btn" id="edit-quote-btn" onclick="toggleEdit()">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            Edit
+          </button>
+          <button class="ai-action-btn ai-send-btn" id="send-reply-btn" onclick="sendReply()">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+            Send Reply
+          </button>
+          <button class="ai-result-close" onclick="this.closest('.ai-result').remove()">✕</button>
+        </div>
+      </div>
+      <!-- Recipients -->
+      <div class="rec-row">
+        <span class="rec-label">To</span>
+        <input class="rec-input" id="reply-to" value="${esc(toDefault)}" placeholder="recipient@example.com">
+      </div>
+      <div class="rec-row">
+        <span class="rec-label">CC</span>
+        <input class="rec-input" id="reply-cc" placeholder="cc@example.com, another@example.com">
+      </div>
+      <div class="rec-row">
+        <span class="rec-label">BCC</span>
+        <input class="rec-input" id="reply-bcc" placeholder="bcc@example.com">
+      </div>
+      <div class="rec-row" style="border-bottom:2px solid rgba(255,255,255,.07)">
+        <span class="rec-label">Subj</span>
+        <input class="rec-input" id="reply-subj" value="${esc(subjDefault)}" style="font-weight:500;color:var(--text-primary)">
+      </div>
+      <!-- Email preview -->
+      <iframe class="quote-frame" id="quote-iframe" srcdoc="" style="height:0"></iframe>
+      <!-- AI Refine bar -->
+      <div class="refine-bar">
+        <span class="refine-icon">✨</span>
+        <input class="refine-input" id="refine-input" placeholder='Ask AI to refine… e.g. "make it shorter", "change turnaround to 3 days", "add a formal tone"'
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();refineResponse();}">
+        <button class="refine-btn" id="refine-btn" onclick="refineResponse()">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Refine
+        </button>
+      </div>
+    </div>`;
+  const iframe = document.getElementById('quote-iframe');
+  iframe.srcdoc = htmlContent;
+  iframe.onload = () => {
+    try {
+      const h = iframe.contentDocument.body.scrollHeight;
+      iframe.style.height = (h + 20) + 'px';
+    } catch {}
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  if (btn) { btn.disabled = false; }
+}
+
+async function refineResponse() {
+  const m = currentQuoteMail;
+  if (!m) return;
+  const instruction = (document.getElementById('refine-input')?.value || '').trim();
+  if (!instruction) return;
+  const btn = document.getElementById('refine-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="width:11px;height:11px;border-width:1.5px;border-color:rgba(255,255,255,.2);border-top-color:currentColor"></div> Refining…`;
+  try {
+    const r = await fetch('/api/generate-response', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        dept: m.dept, from: m.from_addr, from_name: m.from_name,
+        subject: m.subject, body: m.body, refinement: instruction
+      })
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    // Swap just the iframe content, keep the rest of the panel intact
+    const iframe = document.getElementById('quote-iframe');
+    if (iframe) {
+      iframe.srcdoc = data.html_response;
+      iframe.onload = () => {
+        try { iframe.style.height = (iframe.contentDocument.body.scrollHeight + 20) + 'px'; } catch {}
+      };
+    }
+    document.getElementById('refine-input').value = '';
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Refine`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Refine`;
+    alert('Refine failed: ' + e.message);
+  }
+}
+
+async function generateResponse(id) {
+  const m = allMail.find(x => x.id === id);
+  if (!m) return;
+  currentQuoteMail = m;
+  const btn = document.getElementById('ai-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner" style="border-color:rgba(255,255,255,.2);border-top-color:currentColor;width:13px;height:13px"></div> Generating…`;
+  try {
+    const r = await fetch('/api/generate-response', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ dept: m.dept, from: m.from_addr, from_name: m.from_name, subject: m.subject, body: m.body })
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+    showAiResult(data.html_response, data.dept_label || 'AI Response', btn);
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6 9 17l-5-5"/></svg> Generated`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `${DEPT_BTN[m.dept]?.icon || '🤖'} ${DEPT_BTN[m.dept]?.label || 'Generate AI Response'}`;
+    alert('Error: ' + e.message);
+  }
+}
+
+async function generateQuote(id) {
+  const m = allMail.find(x => x.id === id);
+  if (!m) return;
+  currentQuoteMail = m;
+  const btn = document.getElementById('ai-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Generating…`;
+
+  try {
+    const r = await fetch('/api/rfq', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        from: m.from_addr,
+        from_name: m.from_name,
+        subject: m.subject,
+        body: m.body
+      })
+    });
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+
+    showAiResult(data.html_quote, 'Sales Quotation', btn);
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 6 9 17l-5-5"/></svg> Quote Generated`;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `Generate Quote with AI`;
+    alert('Error: ' + e.message);
+  }
+}
+
+function sendToChat(id) {
+  const m = allMail.find(x => x.id === id);
+  if (!m) return;
+  const header = `From: ${m.from_name} <${m.from_addr}>\nSubject: ${m.subject}\n\n`;
+  const isRfq = m.dept === 'sales' && isQuoteRequest(m);
+  const prefix = isRfq ? 'Generate a formal professional quote for this customer inquiry:\n\n' : '';
+  sessionStorage.setItem('amt_prefill', prefix + header + m.body);
+  if (m.dept) sessionStorage.setItem('amt_dept', m.dept);
+  location.href = '/';
+}
+
+function copyBody(id) {
+  const m = allMail.find(x => x.id === id);
+  if (!m) return;
+  navigator.clipboard.writeText(m.body).then(() => {
+    const btn = document.querySelector(`[onclick="copyBody('${id}')"]`);
+    if (btn) { btn.innerHTML = '✓ Copied'; setTimeout(() => btn.innerHTML = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`, 1500); }
+  });
+}
+
+async function loadMail() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spin');
+  btn.querySelector('svg').style.animation = 'spin 0.7s linear infinite';
+  try {
+    const force = arguments[0] === true;
+    const r = await fetch(force ? '/api/mail?force=1' : '/api/mail');
+    const data = await r.json();
+    if (!data.ok) {
+      if (data.setup_required) {
+        document.getElementById('mail-list').innerHTML = `
+          <div class="setup-banner" style="margin:16px">
+            <h3>Gmail not configured</h3>
+            <p>Add these to your <code>.env</code> file:<br><br>
+            <code>GMAIL_ADDRESS=williamkoju@gmail.com</code><br>
+            <code>GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx</code><br><br>
+            Then: Gmail Settings → Forwarding and POP/IMAP → <strong>Enable IMAP</strong><br>
+            And: Google Account → Security → App passwords → <strong>Generate one</strong>.</p>
+          </div>`;
+      } else {
+        throw new Error(data.error);
+      }
+      return;
+    }
+    allMail = data.messages;
+    dismissed.clear();
+    const unread = allMail.filter(m => m.unread).length;
+    const badge = document.getElementById('unread-badge');
+    badge.textContent = unread;
+    badge.style.display = unread > 0 ? '' : 'none';
+    renderList();
+    // Re-open selected if still present
+    if (selectedId && allMail.find(m => m.id === selectedId)) {
+      openMail(selectedId);
+    }
+  } catch(e) {
+    document.getElementById('mail-list').innerHTML = `
+      <div class="empty-inbox"><p style="color:#ff6b6b">Error: ${e.message}</p></div>`;
+  } finally {
+    btn.querySelector('svg').style.animation = '';
+    btn.classList.remove('spin');
+  }
+}
+
+// Handle prefill for "Open in AI Chat" return
+window.addEventListener('load', () => {
+  loadMail();
+});
+</script>
+
+</body>
+</html>

@@ -80,10 +80,12 @@
 
         /* ── Stats strip ── */
         .stats-strip {
+            position: absolute; bottom: 0; left: 0; right: 0;
             display: flex; gap: 6px; padding: 10px 16px;
             border-top: 1px solid rgba(255,255,255,.04);
-            background: rgba(8,8,13,.8);
-            flex-shrink: 0;
+            background: rgba(8,8,13,.88);
+            backdrop-filter: blur(6px);
+            z-index: 5;
         }
         .stat-pill {
             padding: 4px 12px; border-radius: 20px;
@@ -91,6 +93,7 @@
             font-size: .65rem; color: #44445a;
         }
         .stat-pill span { color: #9898b8; font-weight: 600; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -118,7 +121,18 @@
 
 <div class="main">
     <div id="canvas-wrap">
+        <div id="loading-overlay" style="display:none;position:absolute;inset:0;z-index:10;background:rgba(4,4,10,.75);backdrop-filter:blur(6px);flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#ececf5;font-size:13px;font-family:inherit;">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#10d97a" stroke-width="1.6" style="animation:spin .9s linear infinite"><path d="M21 12a9 9 0 1 0-3 6.7L21 16M21 21v-5h-5"/></svg>
+          <span>Running t-SNE on live embeddings…</span>
+        </div>
         <canvas id="c"></canvas>
+        <div class="stats-strip">
+          <div class="stat-pill"><span id="s-total">—</span> products embedded</div>
+          <div class="stat-pill"><span>1,536</span> dimensions per vector</div>
+          <div class="stat-pill">t-SNE <span>2D projection</span></div>
+          <div class="stat-pill">Collection: <span>amt_products_v2</span></div>
+          <div class="stat-pill" style="margin-left:auto;color:#66668a;font-style:italic">Hover any dot to inspect</div>
+        </div>
     </div>
 
     <div id="legend">
@@ -135,14 +149,6 @@
             <p><strong>Why it matters:</strong> When a client asks for <em>"a camera for broadcast news"</em>, the AI finds the nearest vectors — not keywords.</p>
         </div>
     </div>
-</div>
-
-<div class="stats-strip">
-    <div class="stat-pill"><span id="s-total">39</span> products embedded</div>
-    <div class="stat-pill"><span>1,536</span> dimensions per vector</div>
-    <div class="stat-pill">t-SNE <span>perplexity 8</span></div>
-    <div class="stat-pill">Collection: <span>amt_products_v2</span></div>
-    <div class="stat-pill" style="margin-left:auto; color:#66668a; font-style:italic">Hover any dot to inspect</div>
 </div>
 
 <div id="tooltip">
@@ -180,8 +186,11 @@ const ctx = canvas.getContext('2d');
 const tooltip = document.getElementById('tooltip');
 
 async function init() {
-    const res = await fetch('/static/embeddings_viz.json');
+    const loadEl = document.getElementById('loading-overlay');
+    if (loadEl) loadEl.style.display = 'flex';
+    const res = await fetch('/api/embeddings-data');
     points = await res.json();
+    if (loadEl) loadEl.style.display = 'none';
 
     // Normalize coordinates to canvas space
     const xs = points.map(p => p.x), ys = points.map(p => p.y);
@@ -192,6 +201,7 @@ async function init() {
         p.ny = (p.y - minY) / (maxY - minY);
     });
 
+    document.getElementById('s-total').textContent = points.length;
     buildLegend();
     resize();
     window.addEventListener('resize', resize);

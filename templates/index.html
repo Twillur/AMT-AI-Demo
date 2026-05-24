@@ -1,1115 +1,1668 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" id="html-root">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMT AI Assistant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        * { font-family: 'Space Grotesk', system-ui, sans-serif; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMT AI Assistant</title>
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+:root {
+  --bg-base:#04040a; --glass-fill:rgba(255,255,255,.028); --glass-fill-hover:rgba(255,255,255,.045);
+  --glass-border:rgba(255,255,255,.07); --glass-border-strong:rgba(255,255,255,.11);
+  --text-primary:#ececf5; --text-body:#ccccdc; --text-secondary:#7a7a9a; --text-tertiary:#565670;
+  --gold:#f0a500; --gold-soft:#ffb733;
+  --sales:#3b7eff; --distribution:#10d97a; --finance:#f0a500; --service:#a855f7;
+  --accent:var(--gold); --accent-rgb:240,165,0;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:22px;
+  --tf:160ms cubic-bezier(.2,.6,.2,1); --t:240ms cubic-bezier(.2,.6,.2,1); --ts:420ms cubic-bezier(.2,.6,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg-base);color:var(--text-body);font-size:14px;line-height:1.5;letter-spacing:-.005em;}
+button,input,textarea{font-family:inherit;color:inherit;background:none;border:none;outline:none;}
+::selection{background:rgba(240,165,0,.3);color:var(--text-primary);}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+*::-webkit-scrollbar{width:6px;height:5px;}
+*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
+*::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16);}
+:focus-visible{outline:2px solid rgba(240,165,0,.5);outline-offset:2px;border-radius:6px;}
 
-        body {
-            background-color: #09090e;
-            background-image: radial-gradient(circle, #1a1a26 1px, transparent 1px);
-            background-size: 28px 28px;
-        }
+/* Background */
+.bg-stage{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-bloom{position:absolute;left:50%;top:55%;width:1400px;height:1400px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(40,50,110,.35),rgba(20,22,60,.18) 35%,rgba(8,8,22,0) 70%);filter:blur(40px);transition:background var(--ts);animation:bloom-drift 24s ease-in-out infinite alternate;}
+.bg-bloom.dept-sales{background:radial-gradient(closest-side,rgba(59,126,255,.22),rgba(20,30,80,.14) 35%,rgba(8,8,22,0) 70%);}
+.bg-bloom.dept-distribution{background:radial-gradient(closest-side,rgba(16,217,122,.18),rgba(10,60,40,.12) 35%,rgba(8,8,22,0) 70%);}
+.bg-bloom.dept-finance{background:radial-gradient(closest-side,rgba(240,165,0,.18),rgba(60,40,10,.12) 35%,rgba(8,8,22,0) 70%);}
+.bg-bloom.dept-service{background:radial-gradient(closest-side,rgba(168,85,247,.20),rgba(50,20,80,.12) 35%,rgba(8,8,22,0) 70%);}
+@keyframes bloom-drift{0%{transform:translate(-52%,-52%) scale(1)}100%{transform:translate(-48%,-48%) scale(1.12)}}
+.bg-noise{position:absolute;inset:0;opacity:.025;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);opacity:.5;}
 
-        /* ── Glow vars per dept ─────────────────── */
-        :root {
-            --glow-sales:        #3b7eff;
-            --glow-distribution: #10d97a;
-            --glow-finance:      #9d5eff;
-            --glow-service:      #ff7a2f;
-        }
+/* App shell */
+.app{position:relative;z-index:1;display:grid;grid-template-rows:64px 1fr;height:100vh;}
 
-        /* ── Dept cards ─────────────────────────── */
-        .dept-btn { transition: border-color .2s, background .2s, box-shadow .2s; }
-        .dept-btn:hover { background: rgba(255,255,255,.04); }
-        .dept-btn.active-sales        { border-color: var(--glow-sales);        background: rgba(59,126,255,.08);  box-shadow: 0 0 18px -4px rgba(59,126,255,.25);  }
-        .dept-btn.active-distribution { border-color: var(--glow-distribution); background: rgba(16,217,122,.08);  box-shadow: 0 0 18px -4px rgba(16,217,122,.25);  }
-        .dept-btn.active-finance      { border-color: var(--glow-finance);      background: rgba(157,94,255,.08);  box-shadow: 0 0 18px -4px rgba(157,94,255,.25);  }
-        .dept-btn.active-service      { border-color: var(--glow-service);      background: rgba(255,122,47,.08);  box-shadow: 0 0 18px -4px rgba(255,122,47,.25);  }
+/* Header */
+.header{display:flex;align-items:center;padding:0 22px;gap:20px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.55);backdrop-filter:blur(20px);height:64px;}
+.header-side{display:flex;align-items:center;flex:1 1 0;min-width:0;}
+.header-side.right{justify-content:flex-end;gap:8px;}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;}
+.brand-mark{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(240,165,0,.18),rgba(59,126,255,.18) 65%,rgba(16,217,122,.16));border:1px solid rgba(255,255,255,.09);overflow:hidden;transition:transform var(--t),box-shadow var(--t);}
+.brand-mark img{width:24px;height:24px;object-fit:contain;}
+.brand:hover .brand-mark{transform:scale(1.04);box-shadow:0 0 14px rgba(240,165,0,.18);}
+.brand-name{font-size:13px;font-weight:500;color:var(--text-primary);letter-spacing:.01em;}
+.brand-sub{font-size:11px;color:var(--text-secondary);letter-spacing:.04em;text-transform:uppercase;}
+.dept-row{display:flex;align-items:center;gap:4px;padding:4px;background:rgba(255,255,255,.025);border:1px solid var(--glass-border);border-radius:999px;}
+.dept-pill{position:relative;display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:999px;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:color var(--tf),background var(--tf);}
+.dept-pill:hover{color:var(--text-body);background:rgba(255,255,255,.025);}
+.dept-pill.active{color:var(--text-primary);background:rgba(255,255,255,.04);}
+.pill-dot{width:6px;height:6px;border-radius:999px;background:currentColor;opacity:.5;transition:opacity var(--tf),box-shadow var(--tf);}
+.dept-pill.active .pill-dot{opacity:1;background:var(--dc);box-shadow:0 0 12px 1px var(--dc),0 0 22px 2px var(--dc);}
+.pill-line{position:absolute;left:50%;bottom:3px;height:2px;width:0;background:var(--dc);border-radius:2px;box-shadow:0 0 8px var(--dc);transform:translateX(-50%);transition:width var(--t);}
+.dept-pill.active .pill-line{width:60%;}
+.dept-pill.auto .pill-dot{background:conic-gradient(from 0deg,#3b7eff,#10d97a,#f0a500,#a855f7,#3b7eff);animation:spin 6s linear infinite;}
+.dept-pill.auto.active .pill-line{background:linear-gradient(90deg,#3b7eff,#10d97a,#f0a500,#a855f7);box-shadow:0 0 10px rgba(255,255,255,.2);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf);}
+.icon-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.03);border-color:var(--glass-border);}
 
-        /* ── Dept dot ───────────────────────────── */
-        .dot-sales        { background: var(--glow-sales);        --dept-glow: #3b7eff; }
-        .dot-distribution { background: var(--glow-distribution); --dept-glow: #10d97a; }
-        .dot-finance      { background: var(--glow-finance);      --dept-glow: #9d5eff; }
-        .dot-service      { background: var(--glow-service);      --dept-glow: #ff7a2f; }
-        #dept-dot { animation: dotPulseAnim 2.8s ease-in-out infinite; }
-        @keyframes dotPulseAnim {
-            0%,100% { opacity: 1; transform: scale(1); }
-            50%      { opacity: .65; transform: scale(1.35); }
-        }
+/* Main layout */
+.main{display:grid;grid-template-columns:minmax(300px,28%) 1fr;min-height:0;padding:18px;gap:18px;}
 
-        /* ── Send button ───────────────────────── */
-        #send-btn {
-            background: linear-gradient(135deg, #f0a500, #e05500);
-            transition: opacity .2s, box-shadow .2s, transform .15s;
-        }
-        #send-btn:hover:not(:disabled) { opacity:.9; box-shadow:0 0 22px -4px rgba(240,165,0,.55); transform:translateY(-1px); }
-        #send-btn:active { transform:translateY(0); }
-        #send-btn:disabled { opacity:.3; }
+/* Sidebar */
+.sidebar{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden;}
+.sec-label{font-size:10px;color:var(--text-secondary);letter-spacing:.16em;text-transform:uppercase;padding:0 2px;margin-top:2px;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-card{position:relative;padding:14px 14px 12px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden;transition:transform var(--t),border-color var(--tf),background var(--tf),box-shadow var(--t);cursor:default;}
+.stat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,color-mix(in oklab,var(--sc,transparent),transparent 88%),transparent 60%);pointer-events:none;}
+.stat-card::after{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);pointer-events:none;}
+.stat-card.pulse{border-color:color-mix(in oklab,var(--sc),transparent 70%);animation:pulse-border 2.4s ease-in-out infinite;}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 color-mix(in oklab,var(--sc),transparent 70%)}50%{box-shadow:0 0 0 6px color-mix(in oklab,var(--sc),transparent 92%)}}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--glass-border-strong);background:var(--glass-fill-hover);box-shadow:0 8px 24px -8px rgba(0,0,0,.6);}
+.stat-icon{position:absolute;top:13px;right:13px;color:var(--sc,var(--text-secondary));opacity:.8;}
+.stat-number{font-size:26px;font-weight:500;letter-spacing:-.02em;color:var(--text-primary);line-height:1.1;display:flex;align-items:baseline;gap:3px;}
+.stat-number .unit{font-size:12px;color:var(--text-secondary);font-weight:400;letter-spacing:0;}
+.stat-number .currency{font-size:13px;color:var(--text-secondary);font-weight:400;margin-right:1px;}
+.stat-lbl{margin-top:4px;font-size:10.5px;color:var(--text-secondary);letter-spacing:.04em;text-transform:uppercase;}
 
-        /* ── Input focus glow ──────────────────── */
-        #input:focus { border-color:rgba(240,165,0,.5); box-shadow:0 0 0 3px rgba(240,165,0,.07); }
+/* Scenarios */
+.scenarios{display:flex;flex-direction:column;gap:6px;overflow-y:auto;min-height:0;flex:1;padding-right:2px;}
+.sc-card{position:relative;display:flex;align-items:flex-start;gap:11px;padding:12px 14px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);cursor:pointer;text-align:left;overflow:hidden;flex-shrink:0;transition:transform 280ms cubic-bezier(.16,1,.3,1),border-color var(--tf),background var(--tf),box-shadow var(--t);}
+.sc-card::after{content:'';position:absolute;top:-50%;left:-50%;width:60%;height:200%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.06),transparent);transform:translateX(-150%) skewX(-12deg);transition:transform 600ms ease;pointer-events:none;}
+.sc-card:hover{transform:translateY(-2px);border-color:var(--glass-border-strong);background:var(--glass-fill-hover);}
+.sc-card:hover::after{transform:translateX(250%) skewX(-12deg);}
+.sc-icon{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;transition:transform 320ms cubic-bezier(.34,1.56,.64,1);}
+.sc-card:hover .sc-icon{transform:scale(1.08) rotate(-3deg);}
+.sc-title{font-size:12.5px;font-weight:500;color:var(--text-primary);letter-spacing:-.005em;}
+.sc-desc{font-size:11px;color:var(--text-secondary);margin-top:2px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 
-        /* ── Message animations ────────────────── */
-        .msg-enter { animation: msgIn .3s cubic-bezier(.16,1,.3,1) both; }
-        @keyframes msgIn {
-            from { opacity:0; transform:translateY(14px) scale(.97); }
-            to   { opacity:1; transform:translateY(0) scale(1); }
-        }
+/* Metric modal */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(4,4,10,.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-panel{background:rgba(10,10,20,.97);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius-lg);width:min(700px,92vw);max-height:78vh;display:flex;flex-direction:column;overflow:hidden;animation:panel-in 280ms cubic-bezier(.16,1,.3,1);}
+@keyframes panel-in{from{opacity:0;transform:translateY(10px) scale(.975)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--glass-border);}
+.modal-accent{width:3px;height:20px;border-radius:3px;}
+.modal-title{font-size:14px;font-weight:500;color:var(--text-primary);flex:1;}
+.modal-close{width:26px;height:26px;border-radius:6px;color:var(--text-secondary);font-size:13px;display:grid;place-items:center;transition:color var(--tf),background var(--tf);}
+.modal-close:hover{color:var(--text-primary);background:rgba(255,255,255,.06);}
+.modal-body{overflow-y:auto;padding:16px 20px;}
+.modal-table{width:100%;border-collapse:collapse;font-size:12px;}
+.modal-table th{text-align:left;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary);padding:0 12px 8px 0;border-bottom:1px solid var(--glass-border);}
+.modal-table td{padding:8px 12px 8px 0;border-bottom:1px solid rgba(255,255,255,.035);color:var(--text-body);vertical-align:middle;}
+.modal-table tr:last-child td{border-bottom:none;}
+.modal-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:500;}
+.stat-card.clickable{cursor:pointer;}
+.stat-card.clickable:hover::before{opacity:1.5;}
 
-        /* ── Typing dots ───────────────────────── */
-        .dot { width:6px; height:6px; border-radius:50%; background:#555568; animation:dotPulse 1.3s ease-in-out infinite; }
-        .dot:nth-child(2) { animation-delay:.18s; }
-        .dot:nth-child(3) { animation-delay:.36s; }
-        @keyframes dotPulse {
-            0%,80%,100% { transform:scale(.8); opacity:.4; }
-            40%          { transform:scale(1.2); opacity:1; }
-        }
+/* Chat */
+.chat{position:relative;display:grid;grid-template-rows:auto 1fr auto;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-lg);min-height:0;overflow:hidden;}
+.chat::after{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);pointer-events:none;}
+.chat-titlebar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--glass-border);background:rgba(255,255,255,.012);backdrop-filter:blur(12px);}
+.chat-title-row{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--text-primary);}
+.title-dot{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:background var(--t),box-shadow var(--t);}
+.title-sub{color:var(--text-secondary);font-weight:400;font-size:12px;margin-left:2px;}
+.chat-meta{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-secondary);}
+.sep{width:1px;height:12px;background:var(--glass-border);}
+.live-chip{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 10px;border-radius:999px;background:rgba(16,217,122,.08);border:1px solid rgba(16,217,122,.18);color:#6cf2ad;font-size:10px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.live-dot{width:6px;height:6px;border-radius:999px;background:#10d97a;box-shadow:0 0 10px #10d97a;position:relative;animation:pulse-soft 1.8s ease-in-out infinite;}
+.live-dot::after{content:'';position:absolute;inset:-3px;border-radius:999px;border:1px solid #10d97a;animation:ring-pulse 1.6s ease-out infinite;pointer-events:none;}
+@keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes ring-pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.2);opacity:0}}
 
-        /* ── Scenario cards ────────────────────── */
-        .scenario-card {
-            position: relative; overflow: hidden;
-            display: flex; align-items: center; gap: 11px;
-            padding: 11px 14px 11px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,.07);
-            background: rgba(255,255,255,.02);
-            text-align: left; flex: 1; min-width: 140px;
-            cursor: pointer;
-            transition: border-color .2s, background .2s, transform .16s, box-shadow .2s;
-        }
-        .scenario-card:hover {
-            background: rgba(255,255,255,.055);
-            border-color: rgba(255,255,255,.16);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,.35);
-        }
-        /* shimmer sweep on hover */
-        .scenario-card::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.05) 50%, transparent 65%);
-            transform: translateX(-100%); pointer-events: none;
-        }
-        .scenario-card:hover::before { animation: cardShimmer .55s ease forwards; }
-        @keyframes cardShimmer { to { transform: translateX(180%); } }
+/* Messages */
+.messages{overflow-y:auto;padding:24px 24px 12px;display:flex;flex-direction:column;gap:18px;}
+.message{display:flex;gap:12px;max-width:100%;animation:msg-in 380ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes msg-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.message.user{flex-direction:row-reverse;margin-left:auto;max-width:68%;}
+.message.ai{max-width:94%;}
+.avatar{width:28px;height:28px;border-radius:999px;flex-shrink:0;display:grid;place-items:center;font-size:10px;font-weight:600;border:1px solid var(--glass-border);}
+.avatar.user{background:rgba(240,165,0,.1);border-color:rgba(240,165,0,.25);color:#ffce6b;}
+.avatar.ai{background:rgba(255,255,255,.04);color:var(--text-primary);}
+.bubble{padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.55;color:var(--text-body);border:1px solid var(--glass-border);background:rgba(255,255,255,.025);}
+.bubble.user{background:linear-gradient(180deg,rgba(240,165,0,.14),rgba(240,165,0,.07));border-color:rgba(240,165,0,.22);color:#ffeac9;border-radius:14px 14px 4px 14px;}
+.bubble.ai{border-radius:14px 14px 14px 4px;padding:0;overflow:hidden;width:100%;}
+.ai-content{padding:14px 18px 4px;}
+.ai-content p{margin:0 0 8px;font-size:13px;color:var(--text-body);}
+.ai-content strong{color:var(--text-primary);font-weight:500;}
+.ai-content table{display:block;overflow-x:auto;border-collapse:collapse;margin:10px 0;font-size:12px;white-space:nowrap;}
+.ai-content th{font-weight:500;color:var(--gold);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;border-bottom:1px solid rgba(240,165,0,.25);background:rgba(240,165,0,.06);}
+.ai-content td{padding:7px 12px;border-bottom:1px solid var(--glass-border);color:var(--text-body);}
+.ai-content tr:hover td{background:rgba(255,255,255,.025);}
+.ai-content code{font-family:ui-monospace,monospace;font-size:11.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;color:var(--text-primary);}
+.ai-content ul,.ai-content ol{padding-left:1.3rem;margin:6px 0;}
+.ai-content li{font-size:13px;color:var(--text-body);margin:3px 0;}
+.ai-content h3{font-size:13.5px;font-weight:600;color:var(--text-primary);margin:10px 0 4px;}
+.typing-wrap{padding:14px 18px;}
+.typing{display:inline-flex;align-items:center;gap:5px;}
+.typing .dot{width:6px;height:6px;border-radius:999px;background:var(--text-secondary);animation:typing-pulse 1.4s ease-in-out infinite;}
+.typing .dot:nth-child(2){animation-delay:.2s;}.typing .dot:nth-child(3){animation-delay:.4s;}
+@keyframes typing-pulse{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.empty-state{display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 20px;color:var(--text-secondary);max-width:380px;margin:auto;}
+.empty-mark{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--glass-fill);border:1px solid var(--glass-border);color:var(--accent);box-shadow:0 0 24px rgba(240,165,0,.1);margin-bottom:18px;}
+.empty-title{font-size:17px;color:var(--text-primary);font-weight:500;margin-bottom:6px;letter-spacing:-.01em;}
+.empty-desc{font-size:13px;line-height:1.55;}
 
-        /* active states per dept */
-        .sc-active-sales        { border-color: rgba(59,126,255,.55)  !important; background: rgba(59,126,255,.1)  !important; box-shadow: 0 0 20px -4px rgba(59,126,255,.35)  !important; transform:translateY(-1px); }
-        .sc-active-distribution { border-color: rgba(16,217,122,.55)  !important; background: rgba(16,217,122,.1)  !important; box-shadow: 0 0 20px -4px rgba(16,217,122,.35)  !important; transform:translateY(-1px); }
-        .sc-active-finance      { border-color: rgba(157,94,255,.55)  !important; background: rgba(157,94,255,.1)  !important; box-shadow: 0 0 20px -4px rgba(157,94,255,.35)  !important; transform:translateY(-1px); }
-        .sc-active-service      { border-color: rgba(255,122,47,.55)  !important; background: rgba(255,122,47,.1)  !important; box-shadow: 0 0 20px -4px rgba(255,122,47,.35)  !important; transform:translateY(-1px); }
+/* Tool trace pipeline */
+.trace{border-top:1px solid var(--glass-border);background:rgba(255,255,255,.012);}
+.trace-header{display:flex;align-items:center;justify-content:space-between;padding:9px 18px;cursor:pointer;user-select:none;font-size:11.5px;color:var(--text-secondary);transition:color var(--tf);}
+.trace-header:hover{color:var(--text-body);}
+.trace-header .tleft{display:flex;align-items:center;gap:9px;}
+.trace-header .tright{display:flex;align-items:center;gap:12px;font-size:10.5px;}
+.trace-chev{transition:transform var(--t);display:inline-flex;}
+.trace-header.open .trace-chev{transform:rotate(90deg);}
+.trace-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows 380ms cubic-bezier(.16,1,.3,1);}
+.trace-body.open{grid-template-rows:1fr;}
+.trace-body-inner{overflow:hidden;min-height:0;opacity:0;transition:opacity 240ms;}
+.trace-body.open .trace-body-inner{opacity:1;transition-delay:80ms;}
+.pipeline{padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px;}
+.pipeline-track{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:4px;padding-top:10px;margin-top:-6px;}
+.pipe-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;min-width:100px;flex-shrink:0;padding:0 5px;}
+.pipe-step .dot{position:relative;width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.03);border:1px solid var(--sc2,var(--glass-border));color:var(--sc2,var(--text-body));z-index:2;transition:transform 260ms cubic-bezier(.34,1.56,.64,1),box-shadow 240ms;}
+.pipe-step .dot::after{content:'';position:absolute;inset:-4px;border-radius:999px;background:radial-gradient(closest-side,color-mix(in oklab,var(--sc2),transparent 70%),transparent);z-index:-1;opacity:.6;}
+.pipe-step:hover .dot{transform:scale(1.15);box-shadow:0 0 0 4px color-mix(in oklab,var(--sc2),transparent 80%),0 0 18px color-mix(in oklab,var(--sc2),transparent 50%);}
+.pipe-step .plabel{font-size:11px;color:var(--text-primary);font-weight:500;text-align:center;transition:color 220ms;}
+.pipe-step:hover .plabel{color:var(--sc2);}
+.pipe-step .psublabel{font-size:10px;color:var(--text-secondary);text-align:center;max-width:110px;line-height:1.3;}
+.pipe-step:not(:last-child)::after{content:'';position:absolute;left:calc(50% + 20px);right:calc(-50% + 20px);top:13px;height:1px;background:repeating-linear-gradient(90deg,var(--glass-border-strong) 0 4px,transparent 4px 8px);z-index:1;}
+.sql-btn{margin-top:4px;padding:2px 8px;border-radius:5px;background:rgba(94,234,212,.1);border:1px solid rgba(94,234,212,.2);color:#5eead4;font-size:9px;font-family:ui-monospace,monospace;cursor:pointer;letter-spacing:.05em;line-height:1.4;transition:background 160ms,border-color 160ms;}
+.sql-btn:hover{background:rgba(94,234,212,.2);border-color:rgba(94,234,212,.4);}
+.sql-panel{margin:8px 0 4px;background:rgba(8,8,20,.85);border:1px solid rgba(94,234,212,.2);border-radius:8px;overflow:hidden;}
+.sql-panel-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 11px;border-bottom:1px solid rgba(94,234,212,.12);background:rgba(94,234,212,.05);}
+.sql-panel-lbl{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#5eead4;font-weight:500;font-family:ui-monospace,monospace;}
+.sql-panel-close{width:18px;height:18px;border-radius:4px;color:var(--text-secondary);font-size:12px;cursor:pointer;display:grid;place-items:center;transition:color 160ms,background 160ms;}
+.sql-panel-close:hover{color:var(--text-primary);background:rgba(255,255,255,.06);}
+.sql-panel-code{padding:10px 12px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--text-body);line-height:1.6;overflow-x:auto;white-space:pre;margin:0;}
+.pipeline-summary{display:flex;gap:14px;font-size:10.5px;color:var(--text-secondary);border-top:1px dashed var(--glass-border);padding-top:9px;}
+.pipeline-summary strong{color:var(--text-primary);font-weight:500;}
 
-        /* ── Scenario icon circle ──────────────── */
-        .sc-icon {
-            width: 34px; height: 34px; border-radius: 9px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 17px; flex-shrink: 0;
-        }
+/* Composer */
+.composer{padding:14px 18px 18px;}
+.composer-inner{display:flex;align-items:flex-end;gap:10px;background:rgba(8,8,18,.6);border:1px solid var(--glass-border-strong);border-radius:var(--radius-lg);padding:9px 9px 9px 15px;backdrop-filter:blur(28px);transition:border-color var(--tf),box-shadow var(--tf);}
+.composer-inner:focus-within{border-color:rgba(240,165,0,.35);box-shadow:0 0 0 4px rgba(240,165,0,.08);}
+.composer textarea{flex:1;resize:none;background:transparent;color:var(--text-primary);font-size:13.5px;line-height:1.5;padding:5px 0;min-height:24px;max-height:120px;}
+.composer textarea::placeholder{color:var(--text-secondary);}
+.send-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 15px;border-radius:9px;background:linear-gradient(180deg,var(--accent),#c98800);color:#1a1100;font-weight:600;font-size:12.5px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 4px 14px rgba(240,165,0,.25);position:relative;overflow:hidden;transition:transform 220ms cubic-bezier(.16,1,.3,1),filter 220ms,box-shadow 240ms;}
+.send-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent,rgba(255,255,255,.4),transparent);transform:translateX(-130%) skewX(-12deg);transition:transform 700ms cubic-bezier(.16,1,.3,1);}
+.send-btn:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 6px 22px rgba(240,165,0,.35);}
+.send-btn:hover:not(:disabled)::before{transform:translateX(180%) skewX(-12deg);}
+.send-btn:active{transform:translateY(1px);}
+.send-btn:disabled{opacity:.45;cursor:not-allowed;}
+.send-btn svg,.send-btn span{position:relative;z-index:1;}
+.composer-hint{padding:7px 3px 0;font-size:10px;color:var(--text-tertiary);display:flex;justify-content:space-between;}
+.composer-hint kbd{padding:1px 5px;font-family:ui-monospace,monospace;font-size:9.5px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:4px;color:var(--text-body);}
 
-        /* ── Params panel ──────────────────────── */
-        #params-panel { display: none; }
-        #params-panel.visible {
-            display: block;
-            animation: panelIn .25s cubic-bezier(.16,1,.3,1) both;
-        }
-        @keyframes panelIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .params-card {
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,.09);
-            background: rgba(12,12,20,.9);
-            backdrop-filter: blur(16px);
-            overflow: hidden;
-        }
-        .params-accent-bar {
-            height: 2px;
-            width: 100%;
-        }
+/* Full-page views */
+.view-page{height:calc(100vh - 64px);overflow-y:auto;padding:24px 28px 32px;}
+.page-header-row{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:20px;}
+.page-h1{font-size:21px;font-weight:500;letter-spacing:-.015em;color:var(--text-primary);margin:0;}
+.page-sub{margin-top:4px;font-size:13px;color:var(--text-secondary);}
 
-        /* ── Param inputs / selects ────────────── */
-        .param-field {
-            background: rgba(20,20,32,.9);
-            border: 1px solid rgba(255,255,255,.1);
-            color: #e8e8f0;
-            border-radius: 8px;
-            font-size: .79rem;
-            padding: 7px 11px;
-            font-family: 'Space Grotesk', sans-serif;
-            transition: border-color .15s, box-shadow .15s;
-            outline: none;
-        }
-        .param-field:focus { border-color: rgba(240,165,0,.45); box-shadow: 0 0 0 3px rgba(240,165,0,.07); }
-        select.param-field option { background: #12121c; }
-        input[type="number"].param-field::-webkit-inner-spin-button,
-        input[type="number"].param-field::-webkit-outer-spin-button { -webkit-appearance:none; }
-        input[type="number"].param-field { -moz-appearance:textfield; }
+/* Domains page */
+.domains-stats-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:20px;}
+.dstat{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);transition:transform 280ms cubic-bezier(.16,1,.3,1),border-color var(--tf);}
+.dstat:hover{transform:translateY(-2px);border-color:var(--glass-border-strong);}
+.dstat-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;}
+.dstat-val{font-size:20px;font-weight:500;color:var(--text-primary);line-height:1;}
+.dstat-lbl{font-size:10px;color:var(--text-secondary);letter-spacing:.06em;text-transform:uppercase;margin-top:4px;}
+.domain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
+.domain-card{position:relative;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:transform var(--t),border-color var(--tf),box-shadow var(--t);}
+.domain-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--dc2),transparent);opacity:.8;transition:opacity var(--t);}
+.domain-card::after{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);}
+.domain-card:hover{transform:translateY(-3px);border-color:var(--glass-border-strong);box-shadow:0 0 0 1px color-mix(in oklab,var(--dc2),transparent 80%),0 18px 40px -16px rgba(0,0,0,.7);}
+.domain-card:hover::before{opacity:1;}
+.dc-head{padding:16px 18px 11px;border-bottom:1px solid var(--glass-border);}
+.dc-head-row{display:flex;align-items:center;gap:9px;margin-bottom:5px;}
+.dc-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;}
+.dc-name{font-size:14px;font-weight:500;color:var(--text-primary);flex:1;letter-spacing:-.01em;}
+.embedded-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:999px;background:rgba(16,217,122,.1);border:1px solid rgba(16,217,122,.25);color:#6cf2ad;font-size:9.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;}
+.embedded-chip::before{content:'';width:5px;height:5px;border-radius:999px;background:#10d97a;box-shadow:0 0 6px #10d97a;}
+.dc-counts{font-size:11px;color:var(--text-secondary);margin-bottom:8px;}
+.dc-desc{font-size:12px;color:var(--text-body);line-height:1.5;}
+.dc-section{padding:12px 18px;border-bottom:1px solid var(--glass-border);}
+.dc-section:last-child{border-bottom:none;}
+.dc-sec-lbl{font-size:9.5px;letter-spacing:.14em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:8px;}
+.tools-row{display:flex;flex-wrap:wrap;gap:5px;}
+.tool-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);font-family:ui-monospace,monospace;font-size:10px;color:var(--text-body);transition:background 200ms,border-color 200ms,color 200ms;}
+.tool-pill:hover{background:rgba(255,255,255,.05);border-color:var(--glass-border-strong);color:var(--text-primary);}
+.tp-dot{width:5px;height:5px;border-radius:999px;background:var(--dc2);box-shadow:0 0 6px var(--dc2);}
+.source-list{display:flex;flex-direction:column;gap:9px;}
+.src-item .src-head{display:flex;align-items:center;gap:7px;margin-bottom:2px;}
+.kind-chip{display:inline-flex;align-items:center;padding:1px 6px;border-radius:5px;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;font-weight:500;}
+.kind-chip.table{color:#6da4ff;background:rgba(59,126,255,.08);}
+.kind-chip.engine{color:#ffb733;background:rgba(240,165,0,.08);}
+.kind-chip.vector{color:#c084fc;background:rgba(168,85,247,.1);}
+.kind-chip.automation{color:#fb923c;background:rgba(251,146,60,.08);}
+.src-name{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--text-primary);font-weight:500;}
+.src-desc{font-size:11px;color:var(--text-secondary);line-height:1.45;}
+.src-clickable{border-radius:8px;padding:4px 6px;margin:-4px -6px;transition:background var(--tf);}
+.src-clickable:hover{background:rgba(255,255,255,.04);}
+[data-theme="light"] .src-clickable:hover{background:rgba(0,0,0,.04);}
 
-        /* ── Generate button ───────────────────── */
-        .gen-btn {
-            background: linear-gradient(135deg, #f0a500, #e05500);
-            transition: opacity .15s, transform .15s, box-shadow .15s;
-        }
-        .gen-btn:hover { opacity:.88; transform:translateY(-1px); box-shadow:0 0 18px -4px rgba(240,165,0,.5); }
-        .gen-btn:active { transform:translateY(0); }
+/* Vectors page */
+#view-vectors{overflow:hidden;}
+.vec-page{height:100%;display:flex;flex-direction:column;gap:10px;padding:16px 26px 14px;overflow:hidden;}
+.vec-header-row{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;}
+.vec-h1{font-size:19px;font-weight:500;margin:0;color:var(--text-primary);letter-spacing:-.01em;}
+.vec-sub-text{color:var(--text-secondary);font-size:12px;margin-top:4px;}
+.vec-body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 260px;gap:12px;}
+.vec-canvas{position:relative;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-lg);overflow:hidden;}
+.grid-pattern{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.05) 1px,transparent 1px);background-size:28px 28px;opacity:.5;pointer-events:none;}
+.vec-rail{display:flex;flex-direction:column;gap:10px;min-width:0;overflow-y:auto;}
+.vec-card{padding:13px 15px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);transition:border-color var(--tf);}
+.vec-card:hover{border-color:var(--glass-border-strong);}
+.vec-card-lbl{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:9px;}
+.cat-list{display:flex;flex-direction:column;gap:7px;}
+.cat-row{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--text-body);cursor:pointer;padding:3px 2px;border-radius:6px;transition:color var(--tf),opacity 240ms,transform 200ms;}
+.cat-row:hover{color:var(--text-primary);transform:translateX(2px);background:rgba(255,255,255,.025);}
+.cat-row.dim{opacity:.3;}
+.cat-dot{width:9px;height:9px;border-radius:3px;background:var(--cc);box-shadow:0 0 6px color-mix(in oklab,var(--cc),transparent 50%);}
+.cat-count{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--text-secondary);margin-left:auto;}
+.vec-text{font-size:11.5px;color:var(--text-secondary);line-height:1.55;}
+.vec-text strong{color:var(--text-primary);font-weight:500;}
+.vec-text em{font-style:italic;color:var(--text-body);}
+.vec-footer{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);font-size:11px;color:var(--text-secondary);}
+.vec-footer strong{color:var(--text-primary);font-weight:500;}
+.vec-footer code{font-family:ui-monospace,monospace;background:rgba(255,255,255,.04);padding:1px 6px;border-radius:4px;color:var(--text-primary);}
+.vec-inspect{position:absolute;top:14px;left:14px;padding:9px 13px;background:rgba(8,8,18,.88);border:1px solid var(--glass-border-strong);border-radius:var(--radius-md);backdrop-filter:blur(20px);font-size:12px;color:var(--text-body);min-width:220px;pointer-events:none;opacity:0;transition:opacity var(--tf);}
+.vec-inspect.visible{opacity:1;}
+.vi-name{font-weight:500;color:var(--text-primary);margin-bottom:3px;}
+.vi-cat{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);}
+.vi-dot{width:7px;height:7px;border-radius:999px;background:var(--cc2);}
 
-        /* ── Markdown output ───────────────────── */
-        .md-body table  { width:100%; border-collapse:collapse; margin:10px 0; font-size:.8rem; }
-        .md-body th     { background:rgba(240,165,0,.12); padding:8px 12px; text-align:left; border-bottom:1px solid rgba(240,165,0,.25); color:#f0a500; font-weight:600; letter-spacing:.02em; }
-        .md-body td     { padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.06); color:#c8c8d8; }
-        .md-body tr:last-child td { border:none; }
-        .md-body strong { color:#f0c040; }
-        .md-body em     { color:#aaaacc; }
-        .md-body ul, .md-body ol { padding-left:1.4rem; margin:8px 0; }
-        .md-body li     { margin:4px 0; font-size:.85rem; color:#c0c0d0; }
-        .md-body p      { margin:6px 0; font-size:.85rem; color:#c0c0d0; line-height:1.65; }
-        .md-body h3     { font-size:.9rem; font-weight:600; color:#f2f2f4; margin:12px 0 4px; }
-        .md-body code   { background:rgba(255,255,255,.08); padding:2px 6px; border-radius:4px; font-size:.78rem; color:#f0c070; }
-        .md-body blockquote { border-left:3px solid rgba(240,165,0,.4); padding-left:12px; color:#888898; font-style:italic; margin:8px 0; }
+/* Stagger animation */
+.stagger>*{opacity:0;transform:translateY(8px);animation:stagger-in 520ms cubic-bezier(.16,1,.3,1) forwards;}
+.stagger>*:nth-child(1){animation-delay:20ms}.stagger>*:nth-child(2){animation-delay:70ms}.stagger>*:nth-child(3){animation-delay:120ms}.stagger>*:nth-child(4){animation-delay:170ms}.stagger>*:nth-child(5){animation-delay:220ms}.stagger>*:nth-child(6){animation-delay:270ms}.stagger>*:nth-child(7){animation-delay:320ms}.stagger>*:nth-child(8){animation-delay:370ms}
+@keyframes stagger-in{to{opacity:1;transform:translateY(0)}}
+.view-fade{animation:view-in 480ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes view-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.reveal-up{animation:reveal-up 540ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes reveal-up{from{opacity:0;transform:translateY(8px);filter:blur(2px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-        /* ── Scrollbar ─────────────────────────── */
-        #messages::-webkit-scrollbar       { width:3px; }
-        #messages::-webkit-scrollbar-track { background:transparent; }
-        #messages::-webkit-scrollbar-thumb { background:#2a2a3a; border-radius:2px; }
+/* ── Light mode ───────────────────────────────────────────────────────── */
+[data-theme="light"]{--bg-base:#ede9df;--glass-fill:rgba(255,255,255,.68);--glass-fill-hover:rgba(255,255,255,.88);--glass-border:rgba(0,0,0,.08);--glass-border-strong:rgba(0,0,0,.14);--text-primary:#0e0e22;--text-body:#2b2b42;--text-secondary:#686884;--text-tertiary:#9898b2;}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] .bg-bloom{opacity:.3;filter:blur(60px);}
+[data-theme="light"] .bg-noise{opacity:.01;}
+[data-theme="light"] .bg-grid{opacity:.16;background-image:linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px);}
+[data-theme="light"] .header{background:rgba(237,233,223,.92);border-bottom-color:rgba(0,0,0,.1);}
+[data-theme="light"] .dept-row{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .dept-pill:hover{background:rgba(0,0,0,.04);}
+[data-theme="light"] .dept-pill.active{background:rgba(0,0,0,.06);}
+[data-theme="light"] .icon-btn:hover{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);}
+[data-theme="light"] .chat{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.09);}
+[data-theme="light"] .chat-titlebar{background:rgba(255,255,255,.75);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .bubble.user{background:linear-gradient(180deg,rgba(240,165,0,.2),rgba(240,165,0,.1));border-color:rgba(240,165,0,.3);color:#5a3800;}
+[data-theme="light"] .bubble.ai{background:rgba(255,255,255,.88);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .ai-content p,[data-theme="light"] .ai-content li{color:#333;}
+[data-theme="light"] .ai-content td{color:#333;border-color:rgba(0,0,0,.07);}
+[data-theme="light"] .ai-content th{background:rgba(240,165,0,.09);}
+[data-theme="light"] .ai-content code{background:rgba(0,0,0,.07);color:#111;}
+[data-theme="light"] .ai-content h3{color:#111;}
+[data-theme="light"] .trace{background:rgba(0,0,0,.02);border-top-color:rgba(0,0,0,.07);}
+[data-theme="light"] .sql-panel{background:rgba(235,232,222,.95);border-color:rgba(94,234,212,.25);}
+[data-theme="light"] .sql-panel-code{color:#222;}
+[data-theme="light"] .composer-inner{background:rgba(255,255,255,.85);border-color:rgba(0,0,0,.12);}
+[data-theme="light"] .composer-inner:focus-within{border-color:rgba(240,165,0,.45);}
+[data-theme="light"] .composer textarea{color:var(--text-primary);}
+[data-theme="light"] .composer textarea::placeholder{color:var(--text-tertiary);}
+[data-theme="light"] .stat-card{background:rgba(255,255,255,.75);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .stat-card:hover{background:rgba(255,255,255,.95);}
+[data-theme="light"] .sc-card{background:rgba(255,255,255,.65);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .sc-card:hover{background:rgba(255,255,255,.92);}
+[data-theme="light"] .modal-overlay{background:rgba(220,216,206,.75);}
+[data-theme="light"] .modal-panel{background:#eeead8;border-color:rgba(0,0,0,.12);}
+[data-theme="light"] .modal-table td{border-color:rgba(0,0,0,.06);color:#333;}
+[data-theme="light"] .modal-table th{color:var(--text-secondary);}
+[data-theme="light"] .modal-close:hover{background:rgba(0,0,0,.06);}
+[data-theme="light"] .empty-mark{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .live-chip{background:rgba(16,217,122,.06);}
+[data-theme="light"] .pipe-step .dot{background:rgba(0,0,0,.04);}
+[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+[data-theme="light"] *{scrollbar-color:rgba(0,0,0,.1) transparent;}
+[data-theme="light"] ::selection{background:rgba(240,165,0,.4);color:#5a3800;}
+[data-theme="light"] .domain-card,.dstat,[data-theme="light"] .vec-card{background:rgba(255,255,255,.7);}
+[data-theme="light"] .briefing-card{background:rgba(255,255,255,.72);border-color:rgba(0,0,0,.09);}
 
-        /* ── Glass surfaces ────────────────────── */
-        .glass { background:rgba(14,14,20,.88); backdrop-filter:blur(14px); }
+/* ── Toasts ───────────────────────────────────────────────────────────── */
+.toast-stack{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column-reverse;gap:9px;pointer-events:none;}
+.toast{display:flex;align-items:center;gap:10px;padding:11px 15px;background:rgba(10,10,22,.92);border:1px solid var(--glass-border-strong);border-radius:var(--radius-md);backdrop-filter:blur(20px);font-size:12px;color:var(--text-body);min-width:250px;max-width:360px;pointer-events:all;box-shadow:0 8px 28px rgba(0,0,0,.38);animation:toast-in 320ms cubic-bezier(.16,1,.3,1) both;}
+[data-theme="light"] .toast{background:rgba(240,236,225,.97);box-shadow:0 8px 24px rgba(0,0,0,.13);}
+.toast.exit{animation:toast-out 240ms ease forwards;}
+@keyframes toast-in{from{opacity:0;transform:translateX(14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes toast-out{to{opacity:0;transform:translateX(10px) scale(.97)}}
+.toast-dot{width:7px;height:7px;border-radius:999px;flex-shrink:0;box-shadow:0 0 6px currentColor;}
+.toast-msg{flex:1;font-size:12px;color:var(--text-body);line-height:1.4;}
+.toast-msg strong{color:var(--text-primary);font-weight:500;}
+.toast-close{color:var(--text-tertiary);font-size:13px;line-height:1;transition:color 160ms;padding:2px 4px;border-radius:4px;flex-shrink:0;cursor:pointer;}
+.toast-close:hover{color:var(--text-primary);}
 
-        /* ── Stats bar ─────────────────────────── */
-        .stat-card { transition: border-color .25s, box-shadow .25s; }
-        .stat-card:hover { border-color: rgba(255,255,255,.18) !important; }
-        .stat-alert { animation: alertPulse 2.2s ease-in-out infinite; }
-        @keyframes alertPulse {
-            0%,100% { box-shadow: 0 0 0 0 rgba(255,85,85,.18); }
-            50%      { box-shadow: 0 0 0 5px rgba(255,85,85,.0); }
-        }
+/* ── Briefing card ────────────────────────────────────────────────────── */
+.briefing-card{position:relative;padding:12px 14px;background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden;flex-shrink:0;}
+.briefing-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#3b7eff,#10d97a,#f0a500,#a855f7);}
+.briefing-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.briefing-label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-secondary);font-weight:500;display:flex;align-items:center;gap:5px;}
+.briefing-time{font-size:10px;color:var(--text-tertiary);font-family:ui-monospace,monospace;}
+.briefing-text{font-size:11.5px;color:var(--text-body);line-height:1.52;}
+.briefing-text.loading{color:var(--text-tertiary);font-style:italic;}
+.briefing-pulse{display:inline-block;width:5px;height:5px;border-radius:999px;background:#10d97a;box-shadow:0 0 7px #10d97a;animation:pulse-soft 1.8s ease-in-out infinite;vertical-align:middle;}
 
-        /* ── Thinking label ────────────────────── */
-        #thinking-label { animation: fadeLabel 0.4s ease both; }
-        @keyframes fadeLabel {
-            from { opacity:0; transform:translateX(-4px); }
-            to   { opacity:1; transform:translateX(0); }
-        }
+/* ── Mic button ───────────────────────────────────────────────────────── */
+.mic-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:transparent;border:1px solid transparent;color:var(--text-secondary);cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf);flex-shrink:0;}
+.mic-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.04);border-color:var(--glass-border);}
+[data-theme="light"] .mic-btn:hover{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);}
+.mic-btn.recording{color:#ff4a4a;border-color:rgba(255,74,74,.3);background:rgba(255,74,74,.08);animation:mic-pulse 1.1s ease-in-out infinite;}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,74,74,.25)}50%{box-shadow:0 0 0 5px rgba(255,74,74,.0)}}
 
-        /* ── Quick query buttons ───────────────── */
-        .quick-btn { transition: background .18s, border-color .18s, transform .12s, box-shadow .12s; }
-        .quick-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.3); }
-        .quick-btn:active { transform:translateY(0); }
+/* ── Modal CSV export button ──────────────────────────────────────────── */
+.modal-export-btn{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:6px;background:transparent;border:1px solid var(--glass-border);color:var(--text-secondary);font-size:11px;font-weight:500;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf);}
+.modal-export-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.04);border-color:var(--glass-border-strong);}
+[data-theme="light"] .modal-export-btn:hover{background:rgba(0,0,0,.04);}
 
-        /* ── Tech stack bar ────────────────────── */
-        .stack-badge {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 3px 9px; border-radius: 20px; font-size: .65rem;
-            font-weight: 600; letter-spacing: .04em; border: 1px solid;
-            white-space: nowrap; flex-shrink: 0;
-        }
-        .stack-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+/* ── Notification bell ────────────────────────────────────────────────── */
+.notif-wrap{position:relative;display:inline-flex;}
+.notif-btn{position:relative;}
+.notif-badge{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;border-radius:999px;background:#ff6b6b;border:1.5px solid var(--bg-base);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center;padding:0 3px;pointer-events:none;z-index:1;line-height:1;}
+.notif-drop{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:rgba(8,8,18,.97);border:1px solid var(--glass-border-strong);border-radius:var(--radius-md);backdrop-filter:blur(24px);z-index:300;box-shadow:0 16px 48px rgba(0,0,0,.5);animation:panel-in 200ms cubic-bezier(.16,1,.3,1);}
+.notif-drop-head{padding:10px 15px;border-bottom:1px solid var(--glass-border);font-size:10px;font-weight:600;color:var(--text-secondary);letter-spacing:.1em;text-transform:uppercase;}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px 15px;border-bottom:1px solid rgba(255,255,255,.03);}
+.notif-item:last-child{border-bottom:none;}
+.notif-dot2{width:7px;height:7px;border-radius:999px;flex-shrink:0;margin-top:3px;box-shadow:0 0 6px currentColor;}
+.notif-item-text{font-size:12px;color:var(--text-body);line-height:1.4;}
+.notif-empty{padding:14px 15px;font-size:12px;color:var(--text-secondary);text-align:center;}
+[data-theme="light"] .notif-drop{background:rgba(240,236,225,.97);}
+[data-theme="light"] .notif-badge{border-color:var(--bg-base);}
+[data-theme="light"] .notif-item-text{color:#2b2b42;}
+[data-theme="light"] .notif-drop-head{color:#686884;}
+[data-theme="light"] .notif-empty{color:#686884;}
+[data-theme="light"] .vec-inspect{background:rgba(255,255,255,.97);border-color:rgba(0,0,0,.12);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+[data-theme="light"] .vi-name{color:#0e0e22;}
+[data-theme="light"] .vi-cat{color:#686884;}
 
-        /* ── Tool trace ────────────────────────── */
-        .trace-toggle {
-            font-size:.65rem; font-weight:600; letter-spacing:.05em;
-            cursor:pointer; user-select:none;
-            display:inline-flex; align-items:center; gap:5px;
-            padding:3px 8px; border-radius:6px;
-            border:1px solid rgba(255,255,255,.07);
-            background:rgba(255,255,255,.02);
-            color:#44445a; transition:color .15s, border-color .15s;
-        }
-        .trace-toggle:hover { color:#66668a; border-color:rgba(255,255,255,.12); }
-        .trace-panel { display:none; }
-        .trace-panel.open { display:flex; flex-direction:column; gap:3px; margin-top:6px; }
-        .trace-step {
-            display:inline-flex; align-items:center; gap:6px;
-            padding:3px 8px; border-radius:5px; font-size:.68rem;
-            border:1px solid; width:fit-content;
-        }
+/* ── Quick chips (empty state) ────────────────────────────────────────── */
+.quick-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px;max-width:340px;}
+.qchip{padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);color:var(--text-secondary);font-size:11.5px;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf),transform 180ms;}
+.qchip:hover{color:var(--text-primary);background:rgba(255,255,255,.07);border-color:var(--glass-border-strong);transform:translateY(-1px);}
+[data-theme="light"] .qchip{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.09);}
+[data-theme="light"] .qchip:hover{background:rgba(0,0,0,.08);}
 
-        /* ── Dept section divider ──────────────── */
-        .section-label {
-            font-size: .62rem; font-weight: 700; letter-spacing: .1em;
-            text-transform: uppercase; color: #2e2e45;
-        }
-    </style>
+/* ── Vec-page footer fix ──────────────────────────────────────────────── */
+  </style>
 </head>
-<body class="text-gray-100 h-screen flex flex-col overflow-hidden">
+<body>
 
-    <!-- ── Header ─────────────────────────────────── -->
-    <header class="glass border-b border-white/[.05] px-5 py-3 flex items-center justify-between flex-shrink-0 z-10">
-        <div class="flex items-center gap-3">
-            <div id="logo-wrap" class="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
-                 style="background:#111118; border:1px solid rgba(255,255,255,.08)">
-                <img src="/static/amt_logo.webp" alt="AMT" class="w-full h-full object-contain"
-                     onerror="document.getElementById('logo-wrap').outerHTML='<div class=\'w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-black flex-shrink-0\' style=\'background:linear-gradient(135deg,#f0a500,#e05500);box-shadow:0 0 18px -4px rgba(240,165,0,.5)\'>AMT</div>'" />
-            </div>
-            <div>
-                <p class="text-sm font-semibold text-white tracking-tight leading-tight">AMT AI Assistant</p>
-                <p class="text-xs leading-tight" style="color:#44445a">Advanced Media Trading — Internal Demo</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[.05] bg-white/[.025]">
-                <div class="w-1.5 h-1.5 rounded-full bg-emerald-400" style="box-shadow:0 0 7px #10d97a; animation: dotPulse 1.8s ease-in-out infinite;"></div>
-                <span class="text-xs" style="color:#44445a">GPT-4o · Live</span>
-            </div>
-            <button onclick="restartServer()" id="restart-btn"
-                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
-                    style="color:#44445a">
-                ↺ Restart
-            </button>
-            <a href="/domains"
-               class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
-               style="color:#44445a; text-decoration:none">AI Domains</a>
-            <a href="/embeddings"
-               class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors flex items-center gap-1.5"
-               style="color:#44445a; text-decoration:none">
-                <span style="font-size:.6rem">✦</span> Vector Space
-            </a>
-            <button onclick="clearChat()"
-                    class="text-xs px-3 py-1.5 rounded-lg border border-white/[.07] hover:border-white/[.18] transition-colors"
-                    style="color:#44445a">
-                Clear
-            </button>
-        </div>
-    </header>
+<div class="bg-stage" aria-hidden="true">
+  <div class="bg-bloom dept-auto" id="bg-bloom"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-noise"></div>
+</div>
 
-    <!-- ── Tech Stack Bar ────────────────────────── -->
-    <div class="flex items-center gap-2.5 px-5 py-2 border-b border-white/[.04] overflow-x-auto flex-shrink-0"
-         style="background:rgba(6,6,10,.75)">
-        <span class="section-label flex-shrink-0">Powered by</span>
-        <span class="stack-badge" style="color:#00d4ff; border-color:rgba(0,212,255,.2); background:rgba(0,212,255,.06)">
-            <span class="stack-dot" style="background:#00d4ff; box-shadow:0 0 5px #00d4ff"></span>LangGraph
-        </span>
-        <span class="stack-badge" style="color:#7fc244; border-color:rgba(127,194,68,.2); background:rgba(127,194,68,.06)">
-            <span class="stack-dot" style="background:#7fc244; box-shadow:0 0 5px #7fc244"></span>LangChain
-        </span>
-        <span class="stack-badge" style="color:#ff4fa3; border-color:rgba(255,79,163,.2); background:rgba(255,79,163,.06)">
-            <span class="stack-dot" style="background:#ff4fa3; box-shadow:0 0 5px #ff4fa3"></span>LlamaIndex
-        </span>
-        <span class="stack-badge" style="color:#00c853; border-color:rgba(0,200,83,.2); background:rgba(0,200,83,.06)">
-            <span class="stack-dot" style="background:#00c853; box-shadow:0 0 5px #00c853"></span>ChromaDB
-        </span>
-        <span class="stack-badge" style="color:#f0a500; border-color:rgba(240,165,0,.2); background:rgba(240,165,0,.06)">
-            <span class="stack-dot" style="background:#f0a500; box-shadow:0 0 5px #f0a500"></span>GPT-4o
-        </span>
-        <span class="stack-badge" style="color:#4088ff; border-color:rgba(64,136,255,.2); background:rgba(64,136,255,.06)">
-            <span class="stack-dot" style="background:#4088ff; box-shadow:0 0 5px #4088ff"></span>SQLite
-        </span>
-        <span class="stack-badge" style="color:#e040fb; border-color:rgba(224,64,251,.2); background:rgba(224,64,251,.06)">
-            <span class="stack-dot" style="background:#e040fb; box-shadow:0 0 5px #e040fb"></span>Pandas
-        </span>
-        <span class="stack-badge" style="color:#ff6b35; border-color:rgba(255,107,53,.2); background:rgba(255,107,53,.06)">
-            <span class="stack-dot" style="background:#ff6b35; box-shadow:0 0 5px #ff6b35"></span>LangSmith
-        </span>
-        <span class="stack-badge" style="color:#7888a8; border-color:rgba(120,136,168,.15); background:rgba(120,136,168,.04)">
-            <span class="stack-dot" style="background:#7888a8"></span>n8n Workflows
-        </span>
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-side">
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="/static/amt_logo.webp" alt="AMT"
+               onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-weight:700;color:#f0a500;font-size:11px\'>AMT</span>'" />
+        </div>
+        <div>
+          <div class="brand-name">AMT AI Assistant</div>
+          <div class="brand-sub">Advanced Media Trading</div>
+        </div>
+      </div>
     </div>
-
-    <div class="flex flex-1 overflow-hidden">
-
-        <!-- ── Sidebar ──────────────────────────────── -->
-        <aside class="flex-shrink-0 flex flex-col p-3 gap-1.5 border-r border-white/[.05]"
-               style="width:214px; background:rgba(9,9,14,.7)">
-
-            <p class="section-label px-2 mt-1.5 mb-1">Department</p>
-
-            <button onclick="setDept('sales')" id="dept-sales"
-                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(59,126,255,.14)">📊</div>
-                    <div>
-                        <p class="text-sm font-medium" style="color:#e8e8f0">Sales</p>
-                        <p class="text-xs" style="color:#3a3a58">Quotes & Proposals</p>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="setDept('distribution')" id="dept-distribution"
-                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(16,217,122,.11)">🚚</div>
-                    <div>
-                        <p class="text-sm font-medium" style="color:#e8e8f0">Distribution</p>
-                        <p class="text-xs" style="color:#3a3a58">Logistics & Shipping</p>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="setDept('finance')" id="dept-finance"
-                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(157,94,255,.14)">💰</div>
-                    <div>
-                        <p class="text-sm font-medium" style="color:#e8e8f0">Finance</p>
-                        <p class="text-xs" style="color:#3a3a58">Invoices & VAT</p>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="setDept('service')" id="dept-service"
-                    class="dept-btn w-full text-left px-3 py-2.5 rounded-xl border border-white/[.07]">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                         style="background:rgba(255,122,47,.11)">🔧</div>
-                    <div>
-                        <p class="text-sm font-medium" style="color:#e8e8f0">Service</p>
-                        <p class="text-xs" style="color:#3a3a58">After-Sales & Repairs</p>
-                    </div>
-                </div>
-            </button>
-
-            <!-- n8n status indicator -->
-            <div class="mt-3 px-2.5 py-2.5 rounded-xl border border-white/[.05]" style="background:rgba(255,255,255,.02)">
-                <p class="section-label mb-1.5">Automation</p>
-                <div class="flex items-center gap-1.5 mb-1">
-                    <div class="w-1.5 h-1.5 rounded-full" style="background:#10d97a; box-shadow:0 0 5px #10d97a"></div>
-                    <span class="text-xs" style="color:#44445a; font-size:.7rem">n8n · 5 workflows live</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <div class="w-1.5 h-1.5 rounded-full" style="background:#f0a500; box-shadow:0 0 5px #f0a500"></div>
-                    <span class="text-xs" style="color:#44445a; font-size:.7rem">Gmail · real email sends</span>
-                </div>
-            </div>
-
-            <div class="mt-auto pt-3 border-t border-white/[.05] text-center">
-                <p class="text-xs" style="color:#24243a; font-size:.63rem">AMT Internal Demo v1.0</p>
-            </div>
-        </aside>
-
-        <!-- ── Main panel ────────────────────────────── -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-
-            <!-- ── Live Stats Bar ─────────────────── -->
-            <div id="stats-bar" class="border-b border-white/[.04] px-5 py-2.5 flex gap-3 flex-shrink-0 overflow-x-auto"
-                 style="background:rgba(8,8,13,.6)">
-                <!-- filled by JS -->
-            </div>
-
-            <!-- ── Dept header + scenarios + params ── -->
-            <div class="glass border-b border-white/[.05] px-5 pt-3.5 pb-0 flex-shrink-0">
-
-                <!-- Dept header row -->
-                <div class="flex items-center gap-2.5 mb-3">
-                    <div id="dept-dot" class="w-2 h-2 rounded-full dot-sales flex-shrink-0"
-                         style="box-shadow:0 0 10px #3b7eff"></div>
-                    <h2 id="dept-title" class="text-sm font-semibold" style="color:#f2f2f4">Sales Department</h2>
-                    <span id="dept-badge"
-                          class="text-xs px-2.5 py-0.5 rounded-full border"
-                          style="background:rgba(59,126,255,.1); color:#6699ff; border-color:rgba(59,126,255,.25)">
-                        Sales
-                    </span>
-                </div>
-
-                <!-- Scenario cards row -->
-                <div class="mb-0.5">
-                    <p class="section-label mb-2">Scenarios</p>
-                    <div id="scenarios" class="flex gap-2.5 pb-3 overflow-x-auto" style="scrollbar-width:none"></div>
-                </div>
-
-                <!-- Params panel -->
-                <div id="params-panel">
-                    <div class="pb-3.5 pt-0.5">
-                        <div class="params-card">
-                            <div id="params-accent" class="params-accent-bar"
-                                 style="background:linear-gradient(90deg,#3b7eff,#6699ff)"></div>
-                            <div class="px-4 py-3.5">
-                                <div class="flex items-center justify-between mb-3">
-                                    <p id="params-label" class="text-xs font-semibold" style="color:#9898c0"></p>
-                                    <button onclick="closeParamsPanel()"
-                                            class="text-xs px-2 py-0.5 rounded-md border border-white/[.07] hover:border-white/[.15] transition-colors"
-                                            style="color:#44445a">✕ close</button>
-                                </div>
-                                <div id="params-fields" class="flex flex-wrap gap-3 items-end"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick queries / LIVE DATA -->
-                <!-- rendered by JS below scenarios div -->
-            </div>
-
-            <!-- Messages -->
-            <div id="messages" class="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-                <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
-                    <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                         style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 14px -2px rgba(240,165,0,.4)">A</div>
-                    <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
-                         style="background:rgba(18,18,28,.85); border:1px solid rgba(255,255,255,.07)">
-                        <p class="text-sm font-medium mb-1.5" style="color:#e8e8f0">Welcome to AMT AI</p>
-                        <p class="text-xs leading-relaxed" style="color:#7070a0">Pick a department → select a scenario → fill in the details → hit <strong style="color:#f0a500">Generate Prompt</strong> to pre-fill a ready-to-send message. Or type freely below.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input -->
-            <div class="glass border-t border-white/[.05] px-5 py-3.5 flex-shrink-0">
-                <div class="flex gap-3 items-end">
-                    <textarea
-                        id="input"
-                        placeholder="Generate from a scenario above, or type your own request..."
-                        class="flex-1 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none transition-all"
-                        style="background:rgba(16,16,26,.95); border:1px solid rgba(255,255,255,.08); color:#e8e8f0;"
-                        rows="2"
-                        onkeydown="handleKey(event)"
-                    ></textarea>
-                    <button id="send-btn" onclick="sendMessage()"
-                            class="font-semibold text-sm px-5 py-3 rounded-xl text-black flex-shrink-0">
-                        Send →
-                    </button>
-                </div>
-                <p class="text-xs mt-1.5" style="color:#25253a">Enter to send · Shift+Enter for new line</p>
-            </div>
-        </div>
+    <nav class="dept-row" id="dept-row" aria-label="Department"></nav>
+    <div class="header-side right" style="gap:8px">
+      <div id="header-actions" style="display:flex;align-items:center;gap:8px"></div>
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode"></button>
     </div>
+  </header>
+
+  <!-- Dashboard -->
+  <main class="main view-fade" id="view-dashboard">
+    <aside class="sidebar">
+      <div class="briefing-card">
+        <div class="briefing-head">
+          <span class="briefing-label"><span class="briefing-pulse"></span>Today's Briefing</span>
+          <span class="briefing-time" id="briefing-time"></span>
+        </div>
+        <div class="briefing-text loading" id="briefing-text">Loading briefing…</div>
+      </div>
+      <div class="sec-label">Live Metrics</div>
+      <div class="stats-grid stagger" id="stats-grid"></div>
+      <div class="sec-label">Scenarios</div>
+      <div class="scenarios stagger" id="scenarios-list"></div>
+    </aside>
+
+    <section class="chat">
+      <div class="chat-titlebar">
+        <div class="chat-title-row">
+          <span class="title-dot" id="chat-dot"></span>
+          <span id="chat-dept-name">Auto</span>
+          <span class="title-sub" id="chat-dept-sub">AI Routing — picks the best agent automatically</span>
+        </div>
+        <div class="chat-meta">
+          <span id="msg-count">0 messages</span>
+          <span class="sep"></span>
+          <button class="icon-btn" onclick="clearChat()" style="height:24px;padding:0 8px;font-size:10.5px;border-color:var(--glass-border)">Clear</button>
+        </div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-mark">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3v6m0 6v6M3 12h6m6 0h6M6 6l3 3m6 6 3 3M6 18l3-3m6-6 3-3"/></svg>
+          </div>
+          <div class="empty-title">Ready when you are.</div>
+          <div class="empty-desc">Pick a scenario from the left, or try:</div>
+          <div class="quick-chips" id="initial-chips"></div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="composer-inner">
+          <textarea id="msg-input" rows="1" placeholder="Ask anything — AI will route it to the right department…"></textarea>
+          <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" title="Voice input" style="display:none">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+          <button class="send-btn" id="send-btn" disabled>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 3l18 9-18 9 4-9z"/></svg>
+            <span>Send</span>
+          </button>
+        </div>
+        <div class="composer-hint">
+          <span><kbd>↵</kbd> send · <kbd>⇧↵</kbd> new line</span>
+          <span>LangGraph · live AMT database</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Domains view -->
+  <div id="view-domains" hidden>
+    <div class="view-page view-fade">
+      <div class="page-header-row">
+        <div>
+          <h1 class="page-h1 reveal-up">AI Domains</h1>
+          <div class="page-sub reveal-up">Routing verticals — the AI classifies requests and picks the right tools &amp; tables.</div>
+        </div>
+      </div>
+      <div class="domains-stats-row stagger" id="domain-stats-row"></div>
+      <div class="domain-grid stagger" id="domain-grid"></div>
+    </div>
+  </div>
+
+  <!-- Vectors view -->
+  <div id="view-vectors" hidden>
+    <div class="vec-page view-fade">
+      <div class="vec-header-row">
+        <div>
+          <h1 class="vec-h1 reveal-up">AMT Product Vector Space</h1>
+          <div class="vec-sub-text reveal-up">LlamaIndex + ChromaDB — 1,536-dimensional embeddings reduced to 2D via t-SNE</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="vec-tech-badges"></div>
+      </div>
+      <div class="vec-body">
+        <div class="vec-canvas" id="vec-canvas">
+          <div class="grid-pattern"></div>
+          <div class="vec-inspect" id="vec-inspect">
+            <div class="vi-name" id="vi-name"></div>
+            <div class="vi-cat"><span class="vi-dot" id="vi-dot"></span><span id="vi-cat"></span></div>
+          </div>
+        </div>
+        <aside class="vec-rail" id="vec-rail"></aside>
+      </div>
+      <div class="vec-footer">
+        <div style="display:flex;gap:20px;align-items:center">
+          <span><strong>39</strong> products embedded</span>
+          <span><strong>1,536</strong> dimensions</span>
+          <span>t-SNE perplexity <strong>8</strong></span>
+          <span>Collection: <code>amt_products_v2</code></span>
+        </div>
+        <div style="font-style:italic">Hover to inspect · click category to filter</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-    let currentDept = 'sales';
-    let isLoading = false;
-    let activeScenarioIdx = -1;
-    let currentScenarios = [];
+// ── Escape
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-    const deptConfig = {
-        sales: {
-            title: 'Sales Department',
-            badge: 'Sales',
-            badgeStyle: 'background:rgba(59,126,255,.1); color:#6699ff; border-color:rgba(59,126,255,.25)',
-            dotClass: 'dot-sales',
-            dotGlow: 'box-shadow:0 0 10px #3b7eff',
-            activeClass: 'active-sales',
-            color: '#3b7eff',
-            rgb: '59,126,255',
-            activeCardClass: 'sc-active-sales',
-            iconBg: 'rgba(59,126,255,.14)',
-            accentGradient: 'linear-gradient(90deg,#3b7eff,#6699ff)',
-            scenarios: [
-                {
-                    label: '🎬 Studio Kit Quote',
-                    desc: 'Custom build by budget',
-                    params: [
-                        { id: 'budget',      label: 'Budget (AED)',  type: 'number', placeholder: '150000' },
-                        { id: 'client_type', label: 'Client Type',   type: 'select', options: ['Broadcast TV', 'Film Production', 'YouTube Creator', 'Corporate Events', 'News Agency'] },
-                        { id: 'kit_focus',   label: 'Kit Focus',     type: 'select', options: ['Full production kit', 'Camera & lenses only', 'Drone & aerial', 'Audio & wireless', 'Studio lighting'] }
-                    ],
-                    template: 'Build a {kit_focus} quote for a {client_type} client with a budget of AED {budget}. Format as a markdown table: Product | Brand | Model | Est. Price (AED) | Notes. Recommend the best combination from AMT\'s portfolio (Sony, DJI, RED, Sennheiser, Profoto, Manfrotto, Atomos, Zeiss). Stay within budget.'
-                },
-                {
-                    label: '📷 Product Comparison',
-                    desc: 'Side-by-side specs & rec',
-                    params: [
-                        { id: 'product1',    label: 'Product 1',     type: 'select', options: ['DJI Inspire 3', 'DJI Matrice 350 RTK', 'Sony FX9', 'Sony Venice 2', 'RED Komodo 6K', 'ARRI ALEXA 35'] },
-                        { id: 'product2',    label: 'Product 2',     type: 'select', options: ['DJI Matrice 350 RTK', 'DJI Inspire 3', 'Sony FX6', 'RED Komodo 6K', 'Blackmagic URSA', 'Canon EOS C70'] },
-                        { id: 'client_use',  label: 'Client Use Case', type: 'select', options: ['Broadcast news', 'Film production', 'Drone inspection', 'Wedding & events', 'Documentary', 'Social media'] }
-                    ],
-                    template: 'Compare {product1} vs {product2} for a {client_use} client. Include: a side-by-side specs table, pros & cons for each, estimated price range in AED, and a clear recommendation with reasoning.'
-                },
-                {
-                    label: '✉️ Client Follow-up',
-                    desc: 'Professional proposal email',
-                    params: [
-                        { id: 'client_name', label: 'Client Name',       type: 'text',   placeholder: 'e.g. Ahmed Al Rashid' },
-                        { id: 'company',     label: 'Company',            type: 'text',   placeholder: 'e.g. Al Arabiya TV' },
-                        { id: 'product',     label: 'Proposal Topic',     type: 'text',   placeholder: 'e.g. broadcast cameras' },
-                        { id: 'weeks',       label: 'Time Since Proposal', type: 'select', options: ['1 week', '2 weeks', '3 weeks', '1 month'] }
-                    ],
-                    template: 'Draft a professional follow-up email to {client_name} at {company} who has not responded to our {product} proposal in {weeks}. Be polite, add value with a relevant insight, and invite a decision or feedback.'
-                },
-                {
-                    label: '🎥 Creator Package',
-                    desc: 'Gear bundle by platform',
-                    params: [
-                        { id: 'budget',   label: 'Budget (AED)', type: 'number', placeholder: '30000' },
-                        { id: 'platform', label: 'Platform',     type: 'select', options: ['YouTube', 'Instagram / TikTok', 'Podcast / Audio', 'Photography'] },
-                        { id: 'focus',    label: 'Priority',     type: 'select', options: ['Balanced full setup', 'Camera + lens first', 'Audio quality first', 'Lighting setup first'] }
-                    ],
-                    template: 'A {platform} content creator has AED {budget} budget. Priority: {focus}. Build a complete quote from AMT\'s brand portfolio (camera, lens, audio, lighting). Format as a table: Product | Brand | Model | Price (AED) | Why it fits. Stay within budget.'
-                }
-            ]
-        },
-        distribution: {
-            title: 'Distribution & Logistics',
-            badge: 'Distribution',
-            badgeStyle: 'background:rgba(16,217,122,.1); color:#22dd88; border-color:rgba(16,217,122,.25)',
-            dotClass: 'dot-distribution',
-            dotGlow: 'box-shadow:0 0 10px #10d97a',
-            activeClass: 'active-distribution',
-            color: '#10d97a',
-            rgb: '16,217,122',
-            activeCardClass: 'sc-active-distribution',
-            iconBg: 'rgba(16,217,122,.11)',
-            accentGradient: 'linear-gradient(90deg,#10d97a,#22dd88)',
-            scenarios: [
-                {
-                    label: '📦 Supplier Summary',
-                    desc: 'Extract data from email',
-                    params: [
-                        { id: 'email_text', label: 'Paste Supplier Email', type: 'textarea', placeholder: 'Paste the supplier email here...' }
-                    ],
-                    template: 'Extract all key shipment information from this supplier email. Present as a table: Supplier | Items | Order # | Expected Arrival | Status | Action Required. Then list urgent next steps.\n\nEmail:\n{email_text}'
-                },
-                {
-                    label: '🚨 Delay Priority',
-                    desc: 'Rank & action delays',
-                    params: [
-                        { id: 'item1', label: 'Delayed Shipment 1', type: 'text', placeholder: 'e.g. Sony FX9 x2, client: MBC, 2 weeks late' },
-                        { id: 'item2', label: 'Delayed Shipment 2', type: 'text', placeholder: 'e.g. DJI Inspire 3 x1, client: production house, 1 week late' },
-                        { id: 'item3', label: 'Delayed Shipment 3', type: 'text', placeholder: 'e.g. Profoto B10 x5, client: photo studio, 3 weeks late' }
-                    ],
-                    template: 'Rank these delayed shipments by urgency and recommend action for each:\n1. {item1}\n2. {item2}\n3. {item3}\n\nFor each: priority reason, suggested customer communication, and immediate next step for our logistics team.'
-                },
-                {
-                    label: '📝 Supplier Response',
-                    desc: 'Firm escalation draft',
-                    params: [
-                        { id: 'supplier',       label: 'Supplier',       type: 'text',   placeholder: 'e.g. DJI MENA' },
-                        { id: 'order_details',  label: 'Order Details',  type: 'text',   placeholder: 'e.g. Order #DJI-9901, 8x Inspire 3' },
-                        { id: 'weeks_overdue',  label: 'Weeks Overdue',  type: 'select', options: ['1 week', '2 weeks', '3 weeks', '4+ weeks'] }
-                    ],
-                    template: 'Draft a professional but firm email to {supplier}\'s MENA supply team requesting urgent update on: {order_details} — now {weeks_overdue} overdue. Emphasize impact on our clients and request a firm revised delivery date.'
-                },
-                {
-                    label: '📋 Customs Checklist',
-                    desc: 'Import docs by route',
-                    params: [
-                        { id: 'product_type', label: 'Product Type',    type: 'select', options: ['Cinema cameras', 'Commercial drones', 'Professional audio', 'Studio lighting', 'Mixed AV equipment'] },
-                        { id: 'origin',       label: 'Origin Country',  type: 'select', options: ['Japan', 'USA', 'Germany', 'China', 'UK', 'South Korea'] },
-                        { id: 'destination',  label: 'Destination',     type: 'select', options: ['Dubai / UAE', 'Riyadh / Saudi Arabia', 'Cairo / Egypt'] }
-                    ],
-                    template: 'We are importing {product_type} from {origin} into {destination}. Provide a detailed customs checklist: required documents, applicable duties/tariffs, potential inspection requirements, and common pitfalls to avoid.'
-                }
-            ]
-        },
-        finance: {
-            title: 'Finance Department',
-            badge: 'Finance',
-            badgeStyle: 'background:rgba(157,94,255,.1); color:#bb88ff; border-color:rgba(157,94,255,.25)',
-            dotClass: 'dot-finance',
-            dotGlow: 'box-shadow:0 0 10px #9d5eff',
-            activeClass: 'active-finance',
-            color: '#9d5eff',
-            rgb: '157,94,255',
-            activeCardClass: 'sc-active-finance',
-            iconBg: 'rgba(157,94,255,.14)',
-            accentGradient: 'linear-gradient(90deg,#9d5eff,#bb88ff)',
-            scenarios: [
-                {
-                    label: '🧾 Invoice Processor',
-                    desc: 'Convert & apply local VAT',
-                    params: [
-                        { id: 'supplier',  label: 'Supplier',            type: 'text',   placeholder: 'e.g. Manfrotto Italy' },
-                        { id: 'amount',    label: 'Invoice Total',       type: 'number', placeholder: 'e.g. 24500' },
-                        { id: 'currency',  label: 'Currency',            type: 'select', options: ['EUR', 'USD', 'JPY', 'GBP', 'AED'] },
-                        { id: 'country',   label: 'Destination Country', type: 'select', options: ['UAE (5% VAT)', 'Saudi Arabia (15% VAT)', 'Egypt'] }
-                    ],
-                    template: 'Process this invoice for our {country} books:\nSupplier: {supplier} | Invoice Total: {currency} {amount}\n\nConvert to AED (1 USD=3.67, 1 EUR=4.00, 1 GBP=4.65, 100 JPY=2.45 AED), apply the correct VAT rate, and present the full breakdown in a clean table with all line items.'
-                },
-                {
-                    label: '🇸🇦 KSA VAT',
-                    desc: '15% Saudi breakdown',
-                    params: [
-                        { id: 'items',    label: 'Items (brief)',  type: 'text',   placeholder: 'e.g. Sony FX6 x2, Sennheiser EW x4' },
-                        { id: 'subtotal', label: 'Subtotal (AED)', type: 'number', placeholder: 'e.g. 40400' }
-                    ],
-                    template: 'Calculate 15% Saudi VAT for this Riyadh branch shipment:\nItems: {items}\nSubtotal: AED {subtotal}\n\nShow full breakdown as a table: items, subtotal, 15% VAT amount, and total due in AED.'
-                },
-                {
-                    label: '💱 Margin Calculator',
-                    desc: 'Sell price with target margin',
-                    params: [
-                        { id: 'cost_usd', label: 'Supplier Cost (USD)', type: 'number', placeholder: 'e.g. 45000' },
-                        { id: 'cost_eur', label: 'Additional Cost (EUR)', type: 'number', placeholder: '0 if none' },
-                        { id: 'margin',   label: 'Target Margin',       type: 'select', options: ['15%', '20%', '25%', '30%', '35%'] }
-                    ],
-                    template: 'Cost and margin analysis for our finance team:\nSupplier costs: USD {cost_usd} + EUR {cost_eur}\nTarget gross margin: {margin}\n\nStep by step: convert to AED (1 USD=3.67, 1 EUR=4.00), note 5% UAE VAT on import, then calculate minimum selling price to achieve {margin} gross margin. Show all calculations clearly.'
-                },
-                {
-                    label: '📊 Branch Comparison',
-                    desc: 'Cross-currency revenue',
-                    params: [
-                        { id: 'dubai',  label: 'Dubai Revenue (AED)', type: 'number', placeholder: 'e.g. 2400000' },
-                        { id: 'riyadh', label: 'Riyadh Revenue (SAR)', type: 'number', placeholder: 'e.g. 1100000' },
-                        { id: 'cairo',  label: 'Cairo Revenue (EGP)', type: 'number', placeholder: 'e.g. 8500000' }
-                    ],
-                    template: 'Compare AMT branch performance this period:\n- Dubai: AED {dubai}\n- Riyadh: SAR {riyadh} (1 SAR=0.98 AED)\n- Cairo: EGP {cairo} (1 EGP=0.073 AED)\n\nConvert all to AED, show percentage share of total, rank the branches, and highlight any notable gaps or observations.'
-                }
-            ]
-        },
-        service: {
-            title: 'Service & After-Sales',
-            badge: 'Service',
-            badgeStyle: 'background:rgba(255,122,47,.1); color:#ff9955; border-color:rgba(255,122,47,.25)',
-            dotClass: 'dot-service',
-            dotGlow: 'box-shadow:0 0 10px #ff7a2f',
-            activeClass: 'active-service',
-            color: '#ff7a2f',
-            rgb: '255,122,47',
-            activeCardClass: 'sc-active-service',
-            iconBg: 'rgba(255,122,47,.11)',
-            accentGradient: 'linear-gradient(90deg,#ff7a2f,#ff9955)',
-            scenarios: [
-                {
-                    label: '📬 Customer Update',
-                    desc: 'Empathetic status email',
-                    params: [
-                        { id: 'customer', label: 'Customer Name', type: 'text',   placeholder: 'e.g. Khalid Mansour' },
-                        { id: 'brand',    label: 'Brand',         type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Manfrotto', 'Profoto', 'Sennheiser'] },
-                        { id: 'model',    label: 'Model',         type: 'text',   placeholder: 'e.g. Inspire 3' },
-                        { id: 'status',   label: 'Current Status', type: 'select', options: ['Under diagnosis', 'Awaiting spare parts', 'In active repair', 'Ready for collection', 'Warranty claim approved', 'Out of warranty — estimate sent'] }
-                    ],
-                    template: 'Write a professional, empathetic customer update email to {customer}.\nEquipment: {brand} {model}\nCurrent status: {status}\n\nInclude: brief issue recap, current status explanation, next steps, and estimated timeline. Sign off as AMT Service Team.'
-                },
-                {
-                    label: '🔍 Repair Triage',
-                    desc: 'Diagnose & route repair',
-                    params: [
-                        { id: 'brand', label: 'Brand',            type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
-                        { id: 'model', label: 'Model',            type: 'text',   placeholder: 'e.g. FX9' },
-                        { id: 'issue', label: 'Issue Description', type: 'text',   placeholder: 'e.g. Overheating then auto-shutdown' },
-                        { id: 'age',   label: 'Unit Age',         type: 'select', options: ['Under 6 months', '6–12 months', '12–18 months', 'Over 18 months'] }
-                    ],
-                    template: 'Triage this repair request:\n{brand} {model} — Age: {age}\nIssue: {issue}\n\nDiagnose the likely cause, confirm warranty eligibility (1-year AMT standard), and outline the service intake process for our team.'
-                },
-                {
-                    label: '📋 Service Ticket',
-                    desc: 'Professional intake form',
-                    params: [
-                        { id: 'company',      label: 'Customer / Company',  type: 'text',   placeholder: 'e.g. Pulse Films LLC' },
-                        { id: 'brand',        label: 'Brand',               type: 'select', options: ['DJI', 'Sony Professional', 'RED', 'Hasselblad', 'Atomos', 'Sennheiser', 'Manfrotto', 'Profoto'] },
-                        { id: 'model_serial', label: 'Model + Serial #',    type: 'text',   placeholder: 'e.g. Komodo 6K, S/N RD-441892' },
-                        { id: 'issue',        label: 'Issue',               type: 'text',   placeholder: 'e.g. Green lines after firmware update' }
-                    ],
-                    template: 'Create a professional service intake ticket:\nCustomer: {company}\nDevice: {brand} {model_serial}\nReported issue: {issue}\n\nFormat as a complete ticket including: priority level, initial diagnosis hypothesis, warranty status check, and recommended next steps.'
-                },
-                {
-                    label: '⚠️ Warranty Guidance',
-                    desc: 'Policy options for customer',
-                    params: [
-                        { id: 'brand',   label: 'Brand',                  type: 'select', options: ['DJI', 'Sony Professional', 'Hasselblad', 'RED', 'Profoto', 'Sennheiser', 'Manfrotto', 'Atomos'] },
-                        { id: 'product', label: 'Product',                type: 'text',   placeholder: 'e.g. X2D 100C' },
-                        { id: 'months',  label: 'Months Since Purchase',  type: 'select', options: ['Under 12 months (in warranty)', '12–15 months (recently expired)', '15–24 months', 'Over 24 months'] },
-                        { id: 'issue',   label: 'Issue Type',             type: 'text',   placeholder: 'e.g. Dead pixels on sensor' }
-                    ],
-                    template: 'Warranty guidance for a customer with {brand} {product}, purchased {months} ago.\nIssue: {issue}\n\nExplain: 1) warranty status under AMT\'s 1-year policy, 2) available options (warranty repair / out-of-warranty repair / replacement), 3) how to communicate this professionally to the customer.'
-                }
-            ]
+// ── SVG icons
+const ICO = {
+  bolt:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>',
+  cart:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h2l3 12h12l2-8H7"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>',
+  truck:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h12v9H2zm12 3h4l3 3v3h-7"/><circle cx="6" cy="18" r="1.6"/><circle cx="18" cy="18" r="1.6"/></svg>',
+  coin:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 9.5c0-1.2 1.3-2 3-2s3 .8 3 2c0 2.5-6 1.5-6 4 0 1.2 1.3 2 3 2s3-.8 3-2M12 6v2m0 8v2"/></svg>',
+  wrench: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 1 0 3 7L20 16l3-3-2.7-2.3a4 4 0 0 0-5.6-4.4Zm-3 5.5L4 19.5 5.5 21l7.5-7.7"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>',
+  box:    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg>',
+  doc:    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h6"/></svg>',
+  warn:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 17.5v.5"/></svg>',
+  star:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 2.7 6 6.3.8-4.7 4.3 1.3 6.4L12 17.5 6.4 20.5l1.3-6.4L3 9.8 9.3 9z"/></svg>',
+  spark:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v6m0 6v6M3 12h6m6 0h6M6 6l3 3m6 6 3 3M6 18l3-3m6-6 3-3"/></svg>',
+  globe:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4.5 6 4.5 9S15 21 12 21s-4.5-3-4.5-9S9 6 12 3z"/></svg>',
+  layers: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12a9 9 0 1 0-3 6.7L21 16M21 21v-5h-5"/></svg>',
+  send:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 3l18 9-18 9 4-9z"/></svg>',
+  chev:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>',
+  back:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>',
+  clock:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  fire:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c1 4-3 5-3 9a5 5 0 0 0 10 0c0-3-2-5-3-7-1 3-4 2-4-2z"/></svg>',
+};
+
+// ── Dept config
+const DEPTS = [
+  { id:'auto',         label:'Auto',         color:'#e2e2f0', desc:'AI routes automatically' },
+  { id:'sales',        label:'Sales',        color:'#3b7eff', desc:'Quotes & proposals' },
+  { id:'distribution', label:'Distribution', color:'#10d97a', desc:'Logistics & shipping' },
+  { id:'finance',      label:'Finance',      color:'#f0a500', desc:'Invoices & VAT' },
+  { id:'service',      label:'Service',      color:'#a855f7', desc:'After-sales & repairs' },
+];
+const DEPT_MAP = Object.fromEntries(DEPTS.map(d => [d.id, d]));
+
+// ── Framework pipeline colors
+const FW = {
+  'LangGraph':             '#10d97a',
+  'Cache':                 '#f0a500',
+  'SQLite':                '#5eead4',
+  'GPT-4o':                '#f0a500',
+  'Pandas':                '#fb923c',
+  'LlamaIndex + ChromaDB': '#a855f7',
+  'LangChain':             '#3b7eff',
+  'n8n':                   '#e879f9',
+  'LangSmith':             '#facc15',
+};
+
+
+// ── Scenarios
+const SCENARIOS = {
+  auto: [
+    { icon:'truck',  color:'#10d97a', title:'Shipment Status',  desc:'Delayed & customs-held inbound', query:'Show me all delayed, customs-held, or at-risk inbound shipments right now and what action is needed.' },
+    { icon:'coin',   color:'#f0a500', title:'Overdue Report',   desc:'Aging buckets & top debtors',    query:'Run a full aging report on overdue invoices and show me the top debtors.' },
+    { icon:'cart',   color:'#3b7eff', title:'Cinema Kit Quote', desc:'RED V-Raptor + Cooke S7/i',      query:'Build a cinema production kit quote for MBC Group with a budget of AED 500,000. Include RED V-Raptor 8K, Cooke S7/i prime set, support, and media. Format as a markdown table.' },
+    { icon:'wrench', color:'#a855f7', title:'Log Repair',       desc:'Sennheiser 9000 RMA ticket',     query:'Log a repair ticket for Khalid Mansour at ADNOC: Sennheiser 9000 Series receiver, fault — intermittent RF dropout, under warranty.' },
+  ],
+  sales: [
+    { icon:'box',    color:'#3b7eff', title:'Stock Check',      desc:'Current levels & reorder alerts',  query:'What is our current stock level for Sony FX cameras and DJI drones? Highlight anything below reorder point.' },
+    { icon:'cart',   color:'#3b7eff', title:'Cinema Kit Quote', desc:'Build a full production package',   query:'Build a cinema kit quote for a broadcast client with AED 500,000 budget. Camera, lenses, audio, support. Format as a table.' },
+    { icon:'doc',    color:'#3b7eff', title:'Customer Orders',  desc:'Order history for top accounts',    query:'Show me all orders for MBC Group and ADNOC in the last 6 months.' },
+  ],
+  distribution: [
+    { icon:'warn',   color:'#ff6b6b', title:'Delayed Shipments',desc:'All at-risk inbound cargo',          query:'Show me all delayed, customs-held, or at-risk inbound shipments and what action is needed.' },
+    { icon:'truck',  color:'#10d97a', title:'PO Status',        desc:'Purchase order fulfilment view',     query:'What is the status of all our open purchase orders? Which ones are overdue or at risk?' },
+    { icon:'box',    color:'#f0a500', title:'Low Stock Alert',  desc:'Products below reorder threshold',   query:'Which products are below reorder point or critically low on stock right now?' },
+  ],
+  finance: [
+    { icon:'warn',   color:'#f0a500', title:'Overdue Invoices', desc:'Aging report with action required',  query:'Run a full aging report on overdue invoices. Show me top debtors and which ones need urgent follow-up.' },
+    { icon:'coin',   color:'#10d97a', title:'Revenue Summary',  desc:'YTD collection analysis',            query:'Give me a revenue and collection summary for 2026 so far. Break down by paid, unpaid, and overdue.' },
+    { icon:'doc',    color:'#f0a500', title:'Customer Balance', desc:'Outstanding balance by customer',    query:'Show me the outstanding balance and payment history for ADNOC.' },
+  ],
+  service: [
+    { icon:'wrench', color:'#a855f7', title:'Open Tickets',     desc:'All active repair tickets',          query:'Show me all open service tickets. Which ones are urgent or have been waiting the longest?' },
+    { icon:'bolt',   color:'#a855f7', title:'Log Repair',       desc:'Create a new service ticket',        query:'Log a repair ticket for Khalid Mansour at ADNOC: Sennheiser 9000 Series receiver, fault — intermittent RF dropout, under warranty.' },
+    { icon:'doc',    color:'#10d97a', title:'Update Ticket',    desc:'Change status & notify customer',    query:'Update service ticket TKT-001 status to ready for collection and draft a customer notification email.' },
+  ],
+};
+
+// ── State
+let currentDept = 'auto';
+let currentView = 'dashboard';
+let allStats = null;
+let msgCount = 0;
+let isSending = false;
+const deptChats = {}; // { deptId: { html, count } } — persists messages across dept switches
+
+// ── Init
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  renderDeptPills();
+  renderHeaderActions();
+  setupComposer();
+  setupVoice();
+  loadBriefing();
+  fetchStats();
+  // Render initial chips for auto dept
+  const ic = document.getElementById('initial-chips');
+  if (ic) ic.innerHTML = QUICK_CHIPS.auto.map(c=>`<button class="qchip" onclick="sendChip(${JSON.stringify(c.q).replace(/"/g,'&quot;')})">${esc(c.label)}</button>`).join('');
+  // Handle prefill from inbox "Open in AI Chat"
+  const inboxDept = sessionStorage.getItem('amt_dept');
+  if (inboxDept) {
+    sessionStorage.removeItem('amt_dept');
+    switchDept(inboxDept);
+  }
+  const prefill = sessionStorage.getItem('amt_prefill');
+  if (prefill) {
+    sessionStorage.removeItem('amt_prefill');
+    const ta = document.getElementById('msg-input');
+    ta.value = prefill;
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    document.getElementById('send-btn').disabled = false;
+    ta.focus();
+  }
+});
+
+// ── Dept pills
+function renderDeptPills() {
+  document.getElementById('dept-row').innerHTML = DEPTS.map(d => `
+    <button class="dept-pill ${d.id === 'auto' ? 'auto' : ''} ${d.id === currentDept ? 'active' : ''}"
+            style="--dc:${d.color}" data-dept="${d.id}" onclick="switchDept('${d.id}')">
+      <span class="pill-dot"></span>
+      <span>${d.label}</span>
+      <span class="pill-line"></span>
+    </button>
+  `).join('');
+}
+
+function switchDept(id) {
+  // Save current dept's visual messages before switching
+  const box = document.getElementById('messages');
+  deptChats[currentDept] = { html: box.innerHTML, count: msgCount };
+
+  currentDept = id;
+  document.getElementById('bg-bloom').className = 'bg-bloom dept-' + id;
+  document.querySelectorAll('.dept-pill').forEach(p => p.classList.toggle('active', p.dataset.dept === id));
+  const d = DEPT_MAP[id];
+  document.getElementById('chat-dot').style.cssText = `background:${d.color};box-shadow:0 0 10px ${d.color}`;
+  document.getElementById('chat-dept-name').textContent = d.label;
+  document.getElementById('chat-dept-sub').textContent = id === 'auto' ? 'AI Routing — picks the best agent automatically' : d.desc;
+  document.getElementById('msg-input').placeholder = {
+    auto: 'Ask anything — AI will route it to the right department…',
+    sales: 'Ask about quotes, stock, customers, pricing…',
+    distribution: 'Ask about shipments, customs, ETAs, inventory…',
+    finance: 'Ask about invoices, VAT, overdue, revenue…',
+    service: 'Ask about tickets, repairs, warranty, status…',
+  }[id] || 'Ask anything…';
+  // Restore saved messages or show fresh empty state
+  const saved = deptChats[id];
+  if (saved) {
+    box.innerHTML = saved.html;
+    msgCount = saved.count;
+    document.getElementById('msg-count').textContent = msgCount + ' message' + (msgCount !== 1 ? 's' : '');
+    box.scrollTop = box.scrollHeight;
+  } else {
+    clearMessages();
+  }
+  renderStatCards();
+  renderScenarios();
+}
+
+// ── Header actions
+const _NOTIF_BELL_HTML = `
+  <div class="notif-wrap" id="notif-wrap">
+    <button class="icon-btn notif-btn" onclick="toggleNotifDrop()" title="Alerts">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    <span class="notif-badge" style="display:none">0</span>
+    <div class="notif-drop" style="display:none"></div>
+  </div>`;
+
+function renderHeaderActions() {
+  const el = document.getElementById('header-actions');
+  if (currentView === 'dashboard') {
+    el.innerHTML = `
+      ${_NOTIF_BELL_HTML}
+      <button class="icon-btn" onclick="window.location.href='/mail'" style="color:#10d97a;border-color:rgba(16,217,122,.18)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+        Inbox
+      </button>
+      <button class="icon-btn" onclick="window.location.href='/insights'">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Insights
+      </button>
+      <button class="icon-btn" onclick="window.location.href='/history'" title="Chat History">${ICO.clock}</button>
+      <button class="icon-btn" onclick="switchView('domains')" title="AI Domains">${ICO.globe}</button>
+      <button class="icon-btn" onclick="switchView('vectors')" title="Vector Space">${ICO.layers}</button>
+      <button class="icon-btn" id="restart-btn" onclick="restartServer()" title="Restart server">${ICO.refresh}</button>
+      <button class="icon-btn" onclick="doLogout()" title="Sign out" style="color:var(--text-tertiary)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    `;
+  } else {
+    el.innerHTML = `${_NOTIF_BELL_HTML}<button class="icon-btn" onclick="switchView('dashboard')">${ICO.back} Back to AI</button>`;
+  }
+  _applyNotifState();
+}
+
+// ── View switching
+function switchView(view) {
+  currentView = view;
+  ['dashboard','domains','vectors'].forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.hidden = v !== view;
+  });
+  document.getElementById('dept-row').style.display = view === 'dashboard' ? '' : 'none';
+  renderHeaderActions();
+  if (view === 'domains') loadDomainsView();
+  if (view === 'vectors') loadVectorsView();
+}
+
+
+// ── Stats
+async function fetchStats() {
+  try {
+    const r = await fetch('/api/stats');
+    allStats = await r.json();
+    renderStatCards();
+    renderScenarios();
+    initNotifications(allStats);
+  } catch(e) { console.error(e); }
+}
+
+function buildStatCards(dept) {
+  if (!allStats) return [];
+  const s = allStats;
+  switch(dept) {
+    case 'sales': return [
+      { icon:'cart',   label:'Products',      value:s.sales.products,       color:'#3b7eff', metric:'products' },
+      { icon:'doc',    label:'Active Orders',  value:s.sales.orders_active,  color:'#3b7eff', metric:'active_orders' },
+      { icon:'star',   label:'Top Brand',      custom:s.sales.top_brand,     color:'#3b7eff' },
+      { icon:'layers', label:'Brands in Stock',value:s.sales.brands_in_stock, color:'#3b7eff', metric:'brands_stock' },
+    ];
+    case 'distribution': return [
+      { icon:'truck',  label:'In Transit',     value:s.distribution.in_transit, color:'#10d97a', metric:'in_transit' },
+      { icon:'warn',   label:'Delayed',         value:s.distribution.delayed,    color:'#ff6b6b', pulse:s.distribution.delayed>0, metric:'delayed' },
+      { icon:'box',    label:'Low Stock SKUs',  value:s.distribution.low_stock,  color:'#f0a500', pulse:s.distribution.low_stock>5, metric:'low_stock' },
+      { icon:'shield', label:'Customs Holds',   value:1,                          color:'#f0a500', pulse:true, metric:'customs' },
+    ];
+    case 'finance': return [
+      { icon:'warn',   label:'Overdue Invoices',value:s.finance.overdue,                              color:'#f0a500', pulse:s.finance.overdue>0, metric:'overdue' },
+      { icon:'coin',   label:'Unpaid',           value:s.finance.unpaid,                               color:'#f0a500', metric:'unpaid' },
+      { icon:'doc',    label:'Outstanding (AED)',value:Math.round(s.finance.outstanding_aed/1000),unit:'K', color:'#f0a500', pulse:s.finance.outstanding_aed>50000, metric:'unpaid' },
+      { icon:'star',   label:'Paid Invoices',    value:s.finance.paid,                                  color:'#10d97a', metric:'paid_invoices' },
+    ];
+    case 'service': return [
+      { icon:'wrench', label:'Open Tickets',     value:s.service.open,     color:'#a855f7', metric:'open_tickets' },
+      { icon:'bolt',   label:'In Repair',        value:s.service.in_repair, color:'#a855f7', metric:'in_repair' },
+      { icon:'star',   label:'Ready to Collect', value:s.service.ready,    color:'#10d97a', metric:'ready_tickets' },
+      { icon:'fire',   label:'SLA at Risk',      value:Math.max(0,s.service.in_repair-1), color:'#ff6b6b', pulse:s.service.in_repair>1, metric:'in_repair' },
+    ];
+    default: return [
+      { icon:'warn',   label:'Delayed Shipments',value:s.distribution.delayed, color:'#ff6b6b', pulse:s.distribution.delayed>0, metric:'delayed' },
+      { icon:'warn',   label:'Overdue Invoices', value:s.finance.overdue,      color:'#f0a500', pulse:s.finance.overdue>0, metric:'overdue' },
+      { icon:'wrench', label:'Open Tickets',     value:s.service.open,         color:'#a855f7', metric:'open_tickets' },
+      { icon:'cart',   label:'Active Orders',    value:s.sales.orders_active,  color:'#3b7eff', metric:'active_orders' },
+    ];
+  }
+}
+
+function renderStatCards() {
+  const cards = buildStatCards(currentDept);
+  const grid = document.getElementById('stats-grid');
+  grid.className = 'stats-grid stagger';
+  void grid.offsetWidth; // force reflow for animation replay
+  grid.innerHTML = cards.map(c => `
+    <div class="stat-card ${c.pulse?'pulse':''} ${c.metric?'clickable':''}" style="--sc:${c.color}" ${c.metric?`onclick="openMetricModal('${c.metric}','${esc(c.label)}','${c.color}')"`:''}>
+      <div class="stat-icon">${ICO[c.icon]||''}</div>
+      ${c.custom
+        ? `<div class="stat-number"><span style="color:${c.color};font-size:20px">${esc(c.custom)}</span></div>`
+        : `<div class="stat-number">${c.currency?`<span class="currency">${c.currency}</span>`:''}<span class="count-up" data-target="${c.value}">${c.value}</span>${c.unit?`<span class="unit">${c.unit}</span>`:''}</div>`
+      }
+      <div class="stat-lbl">${esc(c.label)}</div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.count-up').forEach(el => countUp(el, parseFloat(el.dataset.target)));
+}
+
+function countUp(el, target) {
+  if (isNaN(target)) return;
+  const dur = 900, start = performance.now();
+  const isFloat = !Number.isInteger(target);
+  const fmt = v => isFloat ? v.toFixed(1) : Math.round(v).toLocaleString();
+  const tick = now => {
+    const p = Math.min((now - start) / dur, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(e * target);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// ── Scenarios
+function renderScenarios() {
+  const list = document.getElementById('scenarios-list');
+  const scens = SCENARIOS[currentDept] || SCENARIOS.auto;
+  list.className = 'scenarios stagger';
+  void list.offsetWidth;
+  list.innerHTML = scens.map(s => `
+    <button class="sc-card" onclick="sendScenario(${JSON.stringify(s.query).replace(/"/g,'&quot;')})">
+      <span class="sc-icon" style="background:color-mix(in oklab,${s.color},transparent 88%);color:${s.color}">${ICO[s.icon]||''}</span>
+      <div style="min-width:0;flex:1">
+        <div class="sc-title">${esc(s.title)}</div>
+        <div class="sc-desc">${esc(s.desc)}</div>
+      </div>
+    </button>
+  `).join('');
+}
+
+// ── Quick chips per dept
+const QUICK_CHIPS = {
+  auto: [
+    { label:'Delayed cargo?', q:'Show all delayed or customs-held inbound shipments.' },
+    { label:'Overdue invoices?', q:'How many invoices are overdue? Show top debtors.' },
+    { label:'Open tickets?', q:'Show all open service tickets.' },
+    { label:'Top brands?', q:'What are our top selling brands by order frequency?' },
+  ],
+  sales: [
+    { label:'DJI stock?', q:'What is our current stock level for DJI drones?' },
+    { label:'Cinema quote', q:'Build a cinema kit quote for AED 200,000.' },
+    { label:'MBC Group orders', q:'Show all orders for MBC Group.' },
+    { label:'Top cameras?', q:'What are our top 3 selling cameras by order volume?' },
+  ],
+  distribution: [
+    { label:'Delayed or customs?', q:'Show all delayed or customs-held inbound shipments.' },
+    { label:'Low stock alert', q:'Which products are below reorder point right now?' },
+    { label:'Open POs?', q:'What is the status of all our open purchase orders?' },
+    { label:'DJI inventory?', q:'What are current DJI inventory levels?' },
+  ],
+  finance: [
+    { label:'Aging report', q:'Run a full aging report on overdue invoices. Show top debtors.' },
+    { label:'Outstanding total?', q:'What is our total outstanding receivables balance?' },
+    { label:'ADNOC balance?', q:'Show the outstanding balance for ADNOC.' },
+    { label:'2026 revenue?', q:'Give me a revenue and collection breakdown for 2026.' },
+  ],
+  service: [
+    { label:'All open tickets', q:'Show all open service tickets.' },
+    { label:'Longest waiting?', q:'Which repair tickets have been waiting the longest?' },
+    { label:'Ready to collect?', q:'How many items are ready for collection?' },
+    { label:'Log a repair', q:'Log a new service ticket.' },
+  ],
+};
+
+function sendScenario(query) {
+  const ta = document.getElementById('msg-input');
+  const btn = document.getElementById('send-btn');
+  ta.value = query;
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  btn.disabled = false;
+  ta.focus();
+  ta.setSelectionRange(query.length, query.length);
+}
+
+function sendChip(query) { sendScenario(query); }
+
+// ── Chat
+function buildEmptyState() {
+  const chips = QUICK_CHIPS[currentDept] || QUICK_CHIPS.auto;
+  return `<div class="empty-state" id="empty-state">
+    <div class="empty-mark"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3v6m0 6v6M3 12h6m6 0h6M6 6l3 3m6 6 3 3M6 18l3-3m6-6 3-3"/></svg></div>
+    <div class="empty-title">Ready when you are.</div>
+    <div class="empty-desc">Pick a scenario from the left, or try:</div>
+    <div class="quick-chips">${chips.map(c=>`<button class="qchip" onclick="sendChip(${JSON.stringify(c.q).replace(/"/g,'&quot;')})">${esc(c.label)}</button>`).join('')}</div>
+  </div>`;
+}
+
+function clearMessages() {
+  const box = document.getElementById('messages');
+  box.innerHTML = buildEmptyState();
+  msgCount = 0;
+  document.getElementById('msg-count').textContent = '0 messages';
+}
+
+function clearChat() {
+  fetch('/api/reset', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ department: currentDept }) });
+  delete deptChats[currentDept];
+  clearMessages();
+}
+
+async function sendMessage(text) {
+  if (!text.trim() || isSending) return;
+  isSending = true;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('empty-state')?.remove();
+
+  addUserMessage(text);
+  addTyping();
+
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ department: currentDept, message: text })
+    });
+    const data = await r.json();
+    removeTyping();
+    if (data.error) addAIMessage(`Error: ${data.error}`, [], {});
+    else await streamAIMessage(data.response, data.tools || [], data.tokens || {});
+  } catch(e) {
+    removeTyping();
+    addAIMessage('Connection error. Is the server running?', [], {});
+  }
+  isSending = false;
+  document.getElementById('send-btn').disabled = !document.getElementById('msg-input').value.trim();
+}
+
+async function streamAIMessage(content, tools, tokens) {
+  msgCount++;
+  document.getElementById('msg-count').textContent = msgCount + ' message' + (msgCount !== 1 ? 's' : '');
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  const cid = 'sc' + Date.now();
+  div.innerHTML = `<div class="avatar ai">A</div><div class="bubble ai"><div class="ai-content" id="${cid}"></div></div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+
+  const el = document.getElementById(cid);
+  const words = content.split(' ');
+  // Adaptive batch: targets ~28 updates regardless of response length
+  const batch = Math.max(2, Math.ceil(words.length / 28));
+
+  await new Promise(resolve => {
+    let i = 0;
+    function tick() {
+      i = Math.min(i + batch, words.length);
+      el.innerHTML = marked.parse(words.slice(0, i).join(' '));
+      box.scrollTop = box.scrollHeight;
+      if (i < words.length) setTimeout(tick, 38);
+      else resolve();
+    }
+    tick();
+  });
+
+  if (tools.length) {
+    div.querySelector('.bubble.ai').insertAdjacentHTML('beforeend', buildPipelineHtml(tools, tokens));
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+function addUserMessage(text) {
+  msgCount++;
+  document.getElementById('msg-count').textContent = msgCount + ' message' + (msgCount !== 1 ? 's' : '');
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message user';
+  div.innerHTML = `
+    <div class="avatar user">W</div>
+    <div class="bubble user">${esc(text)}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function addTyping() {
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ai'; div.id = 'typing-msg';
+  div.innerHTML = `<div class="avatar ai">A</div><div class="bubble ai"><div class="typing-wrap"><div class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div></div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function removeTyping() { document.getElementById('typing-msg')?.remove(); }
+
+function addAIMessage(content, tools, tokens) {
+  msgCount++;
+  document.getElementById('msg-count').textContent = msgCount + ' message' + (msgCount !== 1 ? 's' : '');
+  const box = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  div.innerHTML = `
+    <div class="avatar ai">A</div>
+    <div class="bubble ai">
+      <div class="ai-content">${marked.parse(content)}</div>
+      ${buildPipelineHtml(tools, tokens)}
+    </div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── Pipeline trace
+function buildPipelineHtml(tools, tokens) {
+  if (!tools || tools.length === 0) return '';
+  const isCacheHit = tools[0]?.framework === 'Cache';
+  const totalTokens = tokens?.total || 0;
+  const cost = ((tokens?.prompt||0)*2.5 + (tokens?.completion||0)*10) / 1e6;
+  const uid = 'tr' + Date.now();
+
+  const sqlPanels = [];
+  let _si = 0;
+  const steps = tools.map(t => {
+    const color = FW[t.framework] || '#888888';
+    const isSQL = t.tool === 'sql_query';
+    const sublabel = isSQL ? 'SQL Query' : t.label.length > 36 ? t.label.slice(0,36)+'…' : t.label;
+    let sqlBtn = '';
+    if (isSQL) {
+      const pid = `${uid}_sql${_si++}`;
+      sqlPanels.push({ id: pid, sql: t.label });
+      sqlBtn = `<button class="sql-btn" onclick="toggleSQLPanel('${pid}',this)">SQL ▾</button>`;
+    }
+    return `
+      <div class="pipe-step" style="--sc2:${color}">
+        <div class="dot">
+          <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+        </div>
+        <div class="plabel">${esc(t.framework)}</div>
+        <div class="psublabel">${esc(sublabel)}</div>
+        ${sqlBtn}
+      </div>`;
+  }).join('');
+  const sqlPanelsHtml = sqlPanels.map(p => `
+    <div class="sql-panel" id="${p.id}" hidden>
+      <div class="sql-panel-bar"><span class="sql-panel-lbl">SQLite Query</span><button class="sql-panel-close" onclick="closeSQLPanel('${p.id}')">✕</button></div>
+      <pre class="sql-panel-code">${esc(p.sql)}</pre>
+    </div>`).join('');
+
+  const summaryItems = [];
+  summaryItems.push(`<span>Total <strong>${tools.length}</strong> calls</span>`);
+  if (totalTokens > 0) {
+    summaryItems.push(`<span><strong>${totalTokens.toLocaleString()}</strong> tokens</span>`);
+    summaryItems.push(`<span>≈ <strong>$${cost.toFixed(4)}</strong></span>`);
+  } else if (isCacheHit) {
+    summaryItems.push(`<span style="color:var(--text-tertiary)">Served from semantic cache — 0 tokens spent</span>`);
+  }
+
+  const label = isCacheHit ? '⚡ Cache hit' : `${tools.length} steps fired`;
+  const tokenBadge = totalTokens > 0
+    ? `<span>${totalTokens.toLocaleString()} tokens · $${cost.toFixed(4)}</span>`
+    : isCacheHit ? `<span style="color:#10d97a">0 tokens · $0.0000</span>` : '';
+
+  return `
+    <div class="trace">
+      <div class="trace-header" id="${uid}_h" onclick="toggleTrace('${uid}')">
+        <div class="tleft">
+          <span class="trace-chev">${ICO.chev}</span>
+          <span>Tool trace</span>
+          <span style="color:var(--text-tertiary)">·</span>
+          <span>${label}</span>
+        </div>
+        <div class="tright">${tokenBadge}</div>
+      </div>
+      <div class="trace-body" id="${uid}">
+        <div class="trace-body-inner">
+          <div class="pipeline">
+            <div class="pipeline-track">${steps}</div>
+            ${sqlPanelsHtml}
+            <div class="pipeline-summary">${summaryItems.join('')}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleTrace(uid) {
+  document.getElementById(uid).classList.toggle('open');
+  document.getElementById(uid+'_h').classList.toggle('open');
+}
+
+function toggleSQLPanel(id, btn) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
+  const opening = panel.hidden;
+  panel.hidden = !opening;
+  btn.textContent = opening ? 'SQL ▴' : 'SQL ▾';
+}
+function closeSQLPanel(id) {
+  const el = document.getElementById(id);
+  if (el) el.hidden = true;
+  document.querySelectorAll('.sql-btn').forEach(b => {
+    if (b.getAttribute('onclick')?.includes(`'${id}'`)) b.textContent = 'SQL ▾';
+  });
+}
+
+// ── Composer
+function setupComposer() {
+  const ta = document.getElementById('msg-input');
+  const btn = document.getElementById('send-btn');
+  ta.addEventListener('input', () => {
+    btn.disabled = !ta.value.trim() || isSending;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const v = ta.value.trim();
+      if (v && !isSending) { sendMessage(v); ta.value = ''; btn.disabled = true; ta.style.height = 'auto'; }
+    }
+  });
+  btn.addEventListener('click', () => {
+    const v = ta.value.trim();
+    if (v && !isSending) { sendMessage(v); ta.value = ''; btn.disabled = true; ta.style.height = 'auto'; }
+  });
+}
+
+// ── Restart
+async function doLogout() {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+async function restartServer() {
+  const btn = document.getElementById('restart-btn');
+  if (btn) { btn.style.opacity = '.5'; btn.style.pointerEvents = 'none'; }
+  await fetch('/api/restart', { method: 'POST' });
+  const poll = async () => {
+    try { await fetch('/api/stats'); window.location.reload(); } catch { setTimeout(poll, 800); }
+  };
+  setTimeout(poll, 1000);
+}
+
+// ── Domain source drilldown (module-level so no closure issues) ─────────
+let _schemaCache = null;
+
+async function openTableSchema(tableName, color) {
+  document.getElementById('modal-accent').style.background = color;
+  document.getElementById('modal-title').textContent = tableName;
+  const exportBtn = document.getElementById('modal-export-btn');
+  if (exportBtn) exportBtn.style.display = 'none';
+  document.getElementById('modal-body').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary)">Loading schema…</div>`;
+  document.getElementById('metric-modal').classList.add('open');
+  try {
+    if (!_schemaCache) {
+      const r = await fetch('/api/schema');
+      _schemaCache = await r.json();
+    }
+    const cols = _schemaCache[tableName];
+    if (!cols || cols.length === 0) {
+      document.getElementById('modal-body').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary)">No schema found for <code style="font-family:ui-monospace,monospace">${esc(tableName)}</code>.</div>`;
+      return;
+    }
+    document.getElementById('modal-body').innerHTML = `
+      <table class="modal-table">
+        <thead><tr><th>Field</th><th>Type</th><th>PK</th></tr></thead>
+        <tbody>${cols.map(c=>`<tr><td style="font-family:ui-monospace,monospace;font-size:12px">${esc(c.name)}</td><td style="color:var(--text-secondary);font-size:11px">${esc(c.type)}</td><td>${c.pk?'<span style="color:#10d97a;font-size:11px">✓</span>':''}</td></tr>`).join('')}</tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-tertiary)">${cols.length} field${cols.length!==1?'s':''}</div>`;
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = `<div style="color:#ff6b6b;padding:16px">Error: ${e.message}</div>`;
+  }
+}
+
+const _SOURCE_INFO = {
+  vector: {
+    ChromaDB: { title:'ChromaDB Vector Store', rows:[
+      ['Collection','amt_products_v2'],['Dimensions','1,536 (text-embedding-3-small)'],['Documents','42 products'],
+      ['Metadata fields','brand, model, category, price_aed, sku'],['Index type','HNSW'],['Reduction','t-SNE → 2D for viz'],
+    ]},
+  },
+  engine: {
+    Pandas: { title:'Pandas Analysis Engine', rows:[
+      ['Library','pandas 2.x + numpy'],['Input','SQLite query results → DataFrame'],
+      ['Aging buckets','0-30d / 31-60d / 61-90d / 90d+'],['Operations','groupby, resample, pivot, describe'],
+      ['Output','JSON → AI narration → chat response'],['Trigger','pandas_financial_report tool'],
+    ]},
+  },
+  automation: {
+    'n8n Webhooks': { title:'n8n Automation Webhooks', rows:[
+      ['Host','localhost:5678'],['Active workflows','5'],
+      ['Trigger 1','create_service_ticket → Gmail notification to customer'],
+      ['Trigger 2','update_ticket_status → Gmail status update email'],
+      ['Email sender','Gmail (OAuth2 via n8n credential)'],['Template','AMT-branded HTML email'],
+    ]},
+  },
+};
+
+function openSourceInfo(kind, name, desc, color) {
+  const info = (_SOURCE_INFO[kind] || {})[name];
+  document.getElementById('modal-accent').style.background = color;
+  const exportBtn = document.getElementById('modal-export-btn');
+  if (exportBtn) exportBtn.style.display = 'none';
+  if (info) {
+    document.getElementById('modal-title').textContent = info.title;
+    document.getElementById('modal-body').innerHTML = `
+      <table class="modal-table">
+        <thead><tr><th>Property</th><th>Value</th></tr></thead>
+        <tbody>${info.rows.map(([k,v])=>`<tr><td style="font-family:ui-monospace,monospace;font-size:11px;color:var(--text-secondary)">${esc(k)}</td><td style="font-size:12px">${esc(v)}</td></tr>`).join('')}</tbody>
+      </table>`;
+  } else {
+    document.getElementById('modal-title').textContent = name;
+    document.getElementById('modal-body').innerHTML = `<div style="padding:16px;font-size:13px;color:var(--text-body);line-height:1.6">${esc(desc)}</div>`;
+  }
+  document.getElementById('metric-modal').classList.add('open');
+}
+
+// ── Domains view
+async function loadDomainsView() {
+  const DOMAIN_STATS = [
+    { label:'Active Domains', value:4,  icon:'globe',  color:'#3b7eff' },
+    { label:'Mapped Tools',   value:18, icon:'wrench', color:'#a855f7' },
+    { label:'Tables / Stores',value:19, icon:'layers', color:'#f0a500' },
+    { label:'Embedded',       value:'4/4', icon:'shield', color:'#10d97a' },
+    { label:'n8n Workflows',  value:5,  icon:'bolt',   color:'#fb923c' },
+  ];
+  document.getElementById('domain-stats-row').innerHTML = DOMAIN_STATS.map(s => `
+    <div class="dstat" style="border-left:2px solid ${s.color};background:color-mix(in oklab,${s.color},var(--bg-base) 93%)">
+      <div class="dstat-icon" style="background:color-mix(in oklab,${s.color},transparent 76%);color:${s.color}">${ICO[s.icon]||''}</div>
+      <div><div class="dstat-val" style="color:${s.color}">${esc(String(s.value))}</div><div class="dstat-lbl">${esc(s.label)}</div></div>
+    </div>`).join('');
+
+  const DOMAINS = [
+    { id:'sales', name:'Sales', icon:'cart', color:'#3b7eff', counts:'4 tools · 5 data sources',
+      desc:'Revenue, quotes, product catalog, and customer order history. Use for building equipment quotes, checking stock, comparing products, and semantic product discovery across AMT\'s full brand portfolio.',
+      tools:['semantic_catalog_search','search_products','get_customer_orders','get_stock_level'],
+      sources:[
+        { kind:'table', name:'products', desc:'42 products — brand, model, SKU, price, HS code, warranty' },
+        { kind:'table', name:'inventory', desc:'Stock levels per product per warehouse — qty on hand, reserved' },
+        { kind:'table', name:'orders', desc:'Sales orders — status, total AED, sales rep, customer' },
+        { kind:'table', name:'customers', desc:'15 customers — MBC, ADNOC, SBA, Dubai Film Commission, OSN' },
+        { kind:'vector', name:'ChromaDB', desc:'49-product semantic embeddings — LlamaIndex + text-embedding-3-small' },
+      ]},
+    { id:'distribution', name:'Distribution', icon:'truck', color:'#10d97a', counts:'5 tools · 5 data sources',
+      desc:'Inbound logistics, warehouse stock, and procurement tracking. Use for shipment status, customs-held cargo, PO fulfilment, low stock alerts, and supplier delivery timelines.',
+      tools:['semantic_catalog_search','get_shipments','get_purchase_orders','get_inventory_levels','get_pending_orders'],
+      sources:[
+        { kind:'table', name:'shipments', desc:'Inbound shipments — ETA, carrier, tracking, customs status' },
+        { kind:'table', name:'purchase_orders', desc:'POs raised with suppliers — status, value USD, expected delivery' },
+        { kind:'table', name:'purchase_order_items', desc:'Line items per PO — product, qty ordered, qty received' },
+        { kind:'table', name:'suppliers', desc:'20 suppliers — DJI, Sony, RED, Profoto, Sennheiser and more' },
+        { kind:'table', name:'inventory', desc:'Live stock levels — available qty, reorder thresholds' },
+      ]},
+    { id:'finance', name:'Finance', icon:'coin', color:'#f0a500', counts:'4 tools · 4 data sources',
+      desc:'Invoices, receivables, VAT, and revenue analytics. Use for overdue invoices, customer balances, aging reports, collection rates, and VAT calculations across UAE (5%), KSA (15%), Egypt (14%).',
+      tools:['get_invoices','get_revenue_summary','get_customer_balance','pandas_financial_report'],
+      sources:[
+        { kind:'table', name:'invoices', desc:'42 invoices — amount AED, VAT, status (paid/unpaid/overdue), due date' },
+        { kind:'table', name:'customers', desc:'Customer master — country, account type, credit terms' },
+        { kind:'table', name:'orders', desc:'Sales orders linked to invoices for revenue aggregation' },
+        { kind:'engine', name:'Pandas', desc:'In-memory DataFrame analysis — aging buckets, top debtors, monthly trends' },
+      ]},
+    { id:'service', name:'Service', icon:'wrench', color:'#a855f7', counts:'5 tools · 5 data sources',
+      desc:'After-sales repair ticketing, warranty management, and customer communications. Use for open repair tickets, logging service requests, updating ticket status, and warranty eligibility checks.',
+      tools:['semantic_catalog_search','get_service_tickets','get_ticket_by_customer','create_service_ticket','update_ticket_status'],
+      sources:[
+        { kind:'table', name:'service_tickets', desc:'8 repair tickets — status, warranty, technician, repair cost' },
+        { kind:'table', name:'customers', desc:'Customer records linked to tickets' },
+        { kind:'table', name:'products', desc:'Product catalog for device identification' },
+        { kind:'vector', name:'ChromaDB', desc:'Semantic product search for natural language device descriptions' },
+        { kind:'automation', name:'n8n Webhooks', desc:'Fires branded email notifications on ticket create/update via Gmail' },
+      ]},
+  ];
+
+  document.getElementById('domain-grid').innerHTML = DOMAINS.map(d => `
+    <div class="domain-card" style="--dc2:${d.color}">
+      <div class="dc-head">
+        <div class="dc-head-row">
+          <div class="dc-icon" style="background:color-mix(in oklab,${d.color},transparent 86%);color:${d.color}">${ICO[d.icon]||''}</div>
+          <div class="dc-name">${esc(d.name)}</div>
+          <span class="embedded-chip">Embedded</span>
+        </div>
+        <div class="dc-counts">${esc(d.counts)}</div>
+        <div class="dc-desc">${esc(d.desc)}</div>
+      </div>
+      <div class="dc-section">
+        <div class="dc-sec-lbl">Tools (${d.tools.length})</div>
+        <div class="tools-row">${d.tools.map(t=>`<span class="tool-pill"><span class="tp-dot" style="--dc2:${d.color}"></span>${esc(t)}</span>`).join('')}</div>
+      </div>
+      <div class="dc-section">
+        <div class="dc-sec-lbl">Data Sources (${d.sources.length})</div>
+        <div class="source-list">${d.sources.map(s=>{
+          const clickable = ['table','vector','engine','automation'].includes(s.kind);
+          const handler = s.kind==='table'
+            ? `openTableSchema('${esc(s.name)}','${d.color}')`
+            : `openSourceInfo('${s.kind}','${esc(s.name)}','${esc(s.desc)}','${d.color}')`;
+          const kindLabel = {table:'table',vector:'Vector Store',engine:'engine',automation:'automation'}[s.kind]||s.kind;
+          return `<div class="src-item${clickable?' src-clickable':''}" ${clickable?`onclick="${handler}"`:''}  style="${clickable?'cursor:pointer':''}">
+            <div class="src-head"><span class="kind-chip ${s.kind}">${kindLabel}</span><span class="src-name">${esc(s.name)}</span>${clickable?`<svg style="margin-left:auto;opacity:.4" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>`:''}</div>
+            <div class="src-desc">${esc(s.desc)}</div>
+          </div>`;
+        }).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Vectors view
+function loadVectorsView() {
+  const VEC_CATS = [
+    { id:'camera',   label:'Camera',   color:'#3b7eff', count:10 },
+    { id:'drone',    label:'Drone',    color:'#10d97a', count:6 },
+    { id:'lens',     label:'Lens',     color:'#a855f7', count:5 },
+    { id:'lighting', label:'Lighting', color:'#f0a500', count:5 },
+    { id:'audio',    label:'Audio',    color:'#f472b6', count:4 },
+    { id:'storage',  label:'Storage',  color:'#e879f9', count:4 },
+    { id:'support',  label:'Support',  color:'#94a3b8', count:3 },
+    { id:'gimbal',   label:'Gimbal',   color:'#5eead4', count:2 },
+  ];
+  const CLUSTERS = {
+    drone:    { cx:13,cy:58,r:7,  names:['DJI Inspire 3','DJI Mavic 3 Pro','DJI Mini 4 Pro','DJI Matrice 350','Autel EVO Max 4T','Skydio X10D'] },
+    gimbal:   { cx:25,cy:50,r:4,  names:['DJI Ronin 4D','DJI RS 4 Pro'] },
+    support:  { cx:40,cy:45,r:5,  names:['Sachtler aktiv8','Manfrotto MVH608','Easyrig Vario 5'] },
+    audio:    { cx:48,cy:22,r:5,  names:['Sennheiser EW-DX','Sennheiser EM 9046','Schoeps MK4','DPA 4017'] },
+    camera:   { cx:60,cy:52,r:9,  names:['Sony FX9','Sony FX6','Sony FX3','Sony Venice 2','RED V-Raptor 8K','RED Komodo-X','ARRI Alexa 35','Canon C500 Mk II','Canon C70','Blackmagic URSA 17K'] },
+    storage:  { cx:42,cy:70,r:6,  names:['SanDisk Pro CFexpress 1TB','Angelbird AV PRO 512GB','OWC Atlas Ultra 2TB','G-Tech Shuttle XL'] },
+    lens:     { cx:80,cy:50,r:5,  names:['Cooke S7/i 25mm','Cooke S7/i 35mm','Cooke S7/i 50mm','Cooke S7/i 75mm','Sigma FF High-Speed Set'] },
+    lighting: { cx:56,cy:82,r:5,  names:['ARRI SkyPanel S60-C','ARRI Orbiter','Aputure LS 1200d Pro','Aputure 600x Pro','Astera Titan Tube'] },
+  };
+  const CAT_MAP = Object.fromEntries(VEC_CATS.map(c=>[c.id,c]));
+
+  let seed = 9;
+  const rnd = () => { seed=(seed*9301+49297)%233280; return seed/233280; };
+  const points = [];
+  for (const [catId,c] of Object.entries(CLUSTERS)) {
+    c.names.forEach((name,i) => {
+      const angle=rnd()*Math.PI*2, dist=rnd()*c.r;
+      points.push({ id:`${catId}-${i}`, cat:catId, color:CAT_MAP[catId].color,
+        x:c.cx+Math.cos(angle)*dist, y:c.cy+Math.sin(angle)*dist, name });
+    });
+  }
+
+  const edges = [];
+  const byCat = {};
+  points.forEach(p => { (byCat[p.cat]||=[]).push(p); });
+  for (const list of Object.values(byCat)) {
+    for (let i=0;i<list.length;i++) {
+      const a=list[i];
+      list.filter((_,j)=>i!==j).map(b=>({b,d:Math.hypot(a.x-b.x,a.y-b.y)}))
+        .sort((x,y)=>x.d-y.d).slice(0,Math.min(3,list.length-1))
+        .forEach(({b})=>{ if(a.id<b.id) edges.push({a,b}); });
+    }
+  }
+
+  let activeCats = null; // null = all
+  let hovered = null;
+
+  const canvas = document.getElementById('vec-canvas');
+  const inspect = document.getElementById('vec-inspect');
+
+  function isActive(cat) { return activeCats===null || activeCats.includes(cat); }
+
+  function renderSVG() {
+    let svg = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%;position:absolute;inset:0">`;
+    svg += edges.map(e => {
+      const a=isActive(e.a.cat); const cat=CAT_MAP[e.a.cat];
+      return `<line x1="${e.a.x.toFixed(2)}" y1="${e.a.y.toFixed(2)}" x2="${e.b.x.toFixed(2)}" y2="${e.b.y.toFixed(2)}" stroke="${cat.color}" stroke-width="0.12" stroke-opacity="${a?.35:.05}"/>`;
+    }).join('');
+    svg += Object.entries(CLUSTERS).map(([catId,c]) => {
+      const cat=CAT_MAP[catId]; const a=isActive(catId);
+      return `<text x="${c.cx}" y="${c.cy-c.r-1.5}" text-anchor="middle" font-size="1.6" font-weight="500" font-family="Inter,sans-serif" fill="${cat.color}" opacity="${a?.85:.2}" letter-spacing="0.1em">${cat.label.toUpperCase()}</text>`;
+    }).join('');
+    svg += points.map(p => {
+      const a=isActive(p.cat); const isH=hovered?.id===p.id;
+      return `<circle data-id="${p.id}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${isH?1.6:1.0}" fill="${p.color}" ${isH?`stroke="#fff" stroke-width="0.18"`:''}
+        style="cursor:pointer;filter:drop-shadow(0 0 ${isH?1.6:.8}px ${p.color});opacity:${a?1:.12};transition:r 200ms,opacity 240ms"/>`;
+    }).join('');
+    svg += '</svg>';
+    // remove old svg
+    canvas.querySelectorAll('svg').forEach(s=>s.remove());
+    canvas.insertAdjacentHTML('beforeend', svg);
+    canvas.querySelectorAll('circle[data-id]').forEach(el => {
+      const p = points.find(x=>x.id===el.dataset.id);
+      if (!p) return;
+      el.addEventListener('mouseenter', () => {
+        hovered = p;
+        inspect.classList.add('visible');
+        document.getElementById('vi-name').textContent = p.name;
+        document.getElementById('vi-dot').style.background = p.color;
+        document.getElementById('vi-cat').textContent = p.cat + ' cluster';
+        renderSVG();
+      });
+      el.addEventListener('mouseleave', () => {
+        hovered = null;
+        inspect.classList.remove('visible');
+        renderSVG();
+      });
+    });
+  }
+
+  // Tech badges
+  document.getElementById('vec-tech-badges').innerHTML = [
+    {label:'LlamaIndex',color:'#a855f7'},{label:'ChromaDB',color:'#10d97a'},{label:'GPT-4o Embeddings',color:'#f0a500'}
+  ].map(t=>`<span class="tech-badge"><span class="tech-dot" style="--bc:${t.color}"></span>${t.label}</span>`).join('');
+
+  // Rail
+  document.getElementById('vec-rail').innerHTML = `
+    <div class="vec-card">
+      <div class="vec-card-lbl">Categories</div>
+      <div class="cat-list" id="cat-list">
+        ${VEC_CATS.map(c=>`<div class="cat-row" data-cat="${c.id}" style="--cc:${c.color}">
+          <span class="cat-dot"></span><span class="cat-name">${c.label}</span><span class="cat-count">${c.count}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="vec-card vec-text"><strong>What you're seeing:</strong> Each dot is a product from AMT's catalog. Semantically similar products cluster together naturally.</div>
+    <div class="vec-card vec-text"><strong>How it works:</strong> LlamaIndex converted each product description into <strong>1,536 numbers</strong>. t-SNE compressed those to 2D so you can see the clusters.</div>
+    <div class="vec-card vec-text"><strong>Why it matters:</strong> When a client asks for <em>"a camera for broadcast news,"</em> the AI finds nearest vectors — not keywords.</div>`;
+
+  document.getElementById('cat-list').addEventListener('click', e => {
+    const row = e.target.closest('.cat-row');
+    if (!row) return;
+    const id = row.dataset.cat;
+    const all = VEC_CATS.map(c=>c.id);
+    if (activeCats === null) activeCats = [id];
+    else if (activeCats.includes(id)) {
+      const next = activeCats.filter(c=>c!==id);
+      activeCats = next.length === 0 ? null : next;
+    } else {
+      const next = [...activeCats, id];
+      activeCats = next.length === all.length ? null : next;
+    }
+    document.querySelectorAll('.cat-row').forEach(r => {
+      r.classList.toggle('dim', activeCats !== null && !activeCats.includes(r.dataset.cat));
+    });
+    renderSVG();
+  });
+
+  renderSVG();
+}
+
+// ── Metric modal
+const METRIC_COLS = {
+  products:      [{k:'brand',l:'Brand'},{k:'model',l:'Model'},{k:'category',l:'Category'},{k:'price_aed',l:'Price (AED)'}],
+  active_orders: [{k:'order_ref',l:'Order'},{k:'name',l:'Customer'},{k:'company',l:'Company'},{k:'status',l:'Status'},{k:'total_aed',l:'Value (AED)'},{k:'order_date',l:'Date'}],
+  brands_stock:  [{k:'brand',l:'Brand'},{k:'qty_available',l:'Available'},{k:'qty_on_hand',l:'On Hand'},{k:'reorder_point',l:'Reorder Pt'}],
+  in_transit:    [{k:'shipment_ref',l:'Shipment'},{k:'supplier',l:'Supplier'},{k:'carrier',l:'Carrier'},{k:'status',l:'Status'},{k:'eta',l:'ETA'}],
+  delayed:       [{k:'shipment_ref',l:'Shipment'},{k:'supplier',l:'Supplier'},{k:'carrier',l:'Carrier'},{k:'status',l:'Status'},{k:'eta',l:'ETA'}],
+  customs:       [{k:'shipment_ref',l:'Shipment'},{k:'supplier',l:'Supplier'},{k:'carrier',l:'Carrier'},{k:'status',l:'Status'},{k:'eta',l:'ETA'}],
+  low_stock:     [{k:'brand',l:'Brand'},{k:'model',l:'Model'},{k:'qty_available',l:'Available'},{k:'reorder_point',l:'Reorder Pt'}],
+  overdue:       [{k:'invoice_ref',l:'Invoice'},{k:'name',l:'Customer'},{k:'company',l:'Company'},{k:'amount_aed',l:'Amount (AED)'},{k:'due_date',l:'Due Date'}],
+  unpaid:        [{k:'invoice_ref',l:'Invoice'},{k:'name',l:'Customer'},{k:'company',l:'Company'},{k:'amount_aed',l:'Amount (AED)'},{k:'due_date',l:'Due Date'}],
+  open_tickets:  [{k:'ticket_ref',l:'Ticket'},{k:'name',l:'Customer'},{k:'model',l:'Product'},{k:'issue_description',l:'Issue'},{k:'received_date',l:'Date'}],
+  in_repair:     [{k:'ticket_ref',l:'Ticket'},{k:'name',l:'Customer'},{k:'model',l:'Product'},{k:'status',l:'Status'},{k:'issue_description',l:'Issue'}],
+  ready_tickets: [{k:'ticket_ref',l:'Ticket'},{k:'name',l:'Customer'},{k:'model',l:'Product'},{k:'status',l:'Status'}],
+};
+
+async function openMetricModal(metric, label, color) {
+  document.getElementById('modal-accent').style.background = color;
+  document.getElementById('modal-title').textContent = label;
+  document.getElementById('modal-body').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary)">Loading…</div>`;
+  document.getElementById('metric-modal').classList.add('open');
+  _modalExportData = null;
+  const exportBtn = document.getElementById('modal-export-btn');
+  if (exportBtn) exportBtn.style.display = 'none';
+  try {
+    const r = await fetch(`/api/metric-detail/${metric}`);
+    const rows = await r.json();
+    const cols = METRIC_COLS[metric] || Object.keys(rows[0]||{}).map(k=>({k,l:k}));
+    if (!rows.length) {
+      document.getElementById('modal-body').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary)">No data found.</div>`;
+      return;
+    }
+    _modalExportData = { rows, cols, label };
+    if (exportBtn) exportBtn.style.display = '';
+    document.getElementById('modal-body').innerHTML = `
+      <table class="modal-table">
+        <thead><tr>${cols.map(c=>`<th>${esc(c.l)}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(row=>`<tr>${cols.map(c=>`<td>${esc(String(row[c.k]??'—'))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>`;
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = `<div style="color:#ff6b6b;padding:16px">Error: ${e.message}</div>`;
+  }
+}
+function closeModal() {
+  document.getElementById('metric-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── Theme toggle ───────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('amt-theme') || 'dark';
+  if (saved === 'light') document.getElementById('html-root').dataset.theme = 'light';
+  else delete document.getElementById('html-root').dataset.theme;
+  _updateThemeIcon(saved);
+}
+function toggleTheme() {
+  const root = document.getElementById('html-root');
+  const isLight = root.dataset.theme === 'light';
+  const next = isLight ? 'dark' : 'light';
+  if (next === 'light') root.dataset.theme = 'light';
+  else delete root.dataset.theme;
+  localStorage.setItem('amt-theme', next);
+  _updateThemeIcon(next);
+}
+function _updateThemeIcon(theme) {
+  const btn = document.getElementById('theme-btn');
+  if (!btn) return;
+  if (theme === 'light') {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    btn.title = 'Switch to dark mode';
+  } else {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+    btn.title = 'Switch to light mode';
+  }
+}
+
+// ── Morning briefing ───────────────────────────────────────────────────
+async function loadBriefing() {
+  const el = document.getElementById('briefing-text');
+  const timeEl = document.getElementById('briefing-time');
+  if (!el) return;
+  const now = new Date();
+  timeEl.textContent = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  try {
+    const r = await fetch('/api/briefing');
+    const data = await r.json();
+    el.classList.remove('loading');
+    el.textContent = data.briefing || 'All systems operational.';
+  } catch {
+    el.classList.remove('loading');
+    el.textContent = 'Unable to load briefing.';
+  }
+}
+
+// ── Notification bell (module-level state) ─────────────────────────────
+let _notifAlerts = [];
+let _notifSeen   = false;
+
+function _applyNotifState() {
+  const wrap  = document.getElementById('notif-wrap');
+  if (!wrap) return;
+  const badge = wrap.querySelector('.notif-badge');
+  const drop  = wrap.querySelector('.notif-drop');
+  if (!badge || !drop) return;
+  badge.style.display = (_notifAlerts.length > 0 && !_notifSeen) ? 'grid' : 'none';
+  badge.textContent   = _notifAlerts.length;
+  drop.innerHTML = _notifAlerts.length === 0
+    ? '<div class="notif-empty">No active alerts</div>'
+    : `<div class="notif-drop-head">Alerts · ${_notifAlerts.length}</div>` +
+      _notifAlerts.map(a => `<div class="notif-item"><span class="notif-dot2" style="background:${a.color};color:${a.color}"></span><span class="notif-item-text">${a.text}</span></div>`).join('');
+}
+
+function initNotifications(s) {
+  _notifAlerts = [];
+  _notifSeen   = sessionStorage.getItem('amt_notif_seen') === '1';
+  if (s.distribution.delayed > 0)
+    _notifAlerts.push({ text:`${s.distribution.delayed} shipment${s.distribution.delayed>1?'s':''} delayed or held at customs`, color:'#ff6b6b' });
+  if (s.finance.overdue > 0)
+    _notifAlerts.push({ text:`${s.finance.overdue} invoice${s.finance.overdue>1?'s':''} overdue — AED ${Math.round(s.finance.outstanding_aed/1000)}K outstanding`, color:'#f0a500' });
+  if (s.service.open > 2)
+    _notifAlerts.push({ text:`${s.service.open} open service tickets`, color:'#a855f7' });
+  _applyNotifState();
+}
+
+function toggleNotifDrop() {
+  const wrap = document.getElementById('notif-wrap');
+  if (!wrap) return;
+  const drop = wrap.querySelector('.notif-drop');
+  const showing = drop.style.display !== 'none';
+  drop.style.display = showing ? 'none' : 'block';
+  if (!showing) {
+    _notifSeen = true;
+    sessionStorage.setItem('amt_notif_seen', '1');
+    _applyNotifState(); // hides badge
+    setTimeout(() => {
+      document.addEventListener('click', function _close(e) {
+        if (!wrap.contains(e.target)) {
+          drop.style.display = 'none';
+          document.removeEventListener('click', _close);
         }
-    };
+      });
+    }, 0);
+  }
+}
 
-    function setDept(dept) {
-        closeParamsPanel();
-        currentDept = dept;
-        const c = deptConfig[dept];
-        currentScenarios = c.scenarios;
+// ── Voice input ────────────────────────────────────────────────────────
+let _recognizer = null, _voiceActive = false;
+function setupVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('mic-btn');
+  if (!SR || !btn) return;
+  btn.style.display = '';
+  _recognizer = new SR();
+  _recognizer.continuous = false;
+  _recognizer.interimResults = true;
+  _recognizer.lang = 'en-US';
+  _recognizer.onresult = e => {
+    const t = Array.from(e.results).map(r => r[0].transcript).join('');
+    const ta = document.getElementById('msg-input');
+    ta.value = t;
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    document.getElementById('send-btn').disabled = !t.trim() || isSending;
+  };
+  _recognizer.onend = () => { _voiceActive = false; btn.classList.remove('recording'); };
+  _recognizer.onerror = () => { _voiceActive = false; btn.classList.remove('recording'); };
+}
+function toggleVoice() {
+  if (!_recognizer) return;
+  const btn = document.getElementById('mic-btn');
+  if (_voiceActive) { _recognizer.stop(); }
+  else { _recognizer.start(); _voiceActive = true; btn.classList.add('recording'); }
+}
 
-        document.querySelectorAll('.dept-btn').forEach(b => {
-            b.className = b.className.replace(/active-\w+/g, '').trim();
-        });
-        document.getElementById(`dept-${dept}`).classList.add(c.activeClass);
-
-        const dot = document.getElementById('dept-dot');
-        dot.className = `w-2 h-2 rounded-full ${c.dotClass} flex-shrink-0`;
-        dot.style.cssText = c.dotGlow;
-
-        document.getElementById('dept-title').textContent = c.title;
-        const badge = document.getElementById('dept-badge');
-        badge.textContent = c.badge;
-        badge.style.cssText = c.badgeStyle;
-
-        // Render scenario cards
-        document.getElementById('scenarios').innerHTML = c.scenarios.map((s, i) =>
-            `<button onclick="useScenario(${i})" id="scenario-btn-${i}" class="scenario-card">
-                <div class="sc-icon" style="background:${c.iconBg}; font-size:16px">${s.label.split(' ')[0]}</div>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold leading-tight mb-0.5" style="color:#d8d8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
-                        ${s.label.slice(s.label.indexOf(' ') + 1)}
-                    </p>
-                    <p class="text-xs leading-tight" style="color:#44445a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${s.desc}</p>
-                </div>
-            </button>`
-        ).join('');
-
-        // Update params accent color
-        document.getElementById('params-accent').style.background = c.accentGradient;
-    }
-
-    function useScenario(i) {
-        if (activeScenarioIdx === i) {
-            closeParamsPanel();
-            return;
-        }
-        activeScenarioIdx = i;
-        const c = deptConfig[currentDept];
-
-        document.querySelectorAll('.scenario-card').forEach((b, idx) => {
-            // Remove all active classes
-            ['sc-active-sales','sc-active-distribution','sc-active-finance','sc-active-service'].forEach(cls => b.classList.remove(cls));
-            if (idx === i) b.classList.add(c.activeCardClass);
-        });
-        renderParamsPanel(currentScenarios[i]);
-    }
-
-    function renderParamsPanel(scenario) {
-        const panel = document.getElementById('params-panel');
-        panel.classList.remove('visible');
-        void panel.offsetWidth;
-
-        document.getElementById('params-label').textContent = scenario.label;
-
-        const fields = document.getElementById('params-fields');
-        fields.innerHTML = scenario.params.map(p => {
-            if (p.type === 'select') {
-                return `<div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
-                    <select id="param-${p.id}" class="param-field" style="min-width:148px">
-                        ${p.options.map(o => `<option>${o}</option>`).join('')}
-                    </select>
-                </div>`;
-            } else if (p.type === 'textarea') {
-                return `<div class="flex flex-col gap-1.5 w-full">
-                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
-                    <textarea id="param-${p.id}" class="param-field w-full resize-none" rows="3"
-                              placeholder="${p.placeholder || ''}"></textarea>
-                </div>`;
-            } else {
-                const w = p.type === 'number' ? '115px' : '170px';
-                return `<div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium" style="color:#55556a; font-size:.7rem; letter-spacing:.02em">${p.label}</label>
-                    <input id="param-${p.id}" type="${p.type}" class="param-field"
-                           style="min-width:${w}" placeholder="${p.placeholder || ''}" />
-                </div>`;
-            }
-        }).join('');
-
-        fields.innerHTML += `<button onclick="buildPrompt()"
-            class="gen-btn self-end text-xs px-5 py-2.5 rounded-xl font-semibold text-black flex-shrink-0 flex items-center gap-2">
-            <span>Generate Prompt</span><span style="opacity:.8">→</span>
-        </button>`;
-
-        panel.classList.add('visible');
-    }
-
-    function closeParamsPanel() {
-        activeScenarioIdx = -1;
-        document.getElementById('params-panel').classList.remove('visible');
-        document.querySelectorAll('.scenario-card').forEach(b => {
-            ['sc-active-sales','sc-active-distribution','sc-active-finance','sc-active-service'].forEach(cls => b.classList.remove(cls));
-        });
-    }
-
-    function buildPrompt() {
-        if (activeScenarioIdx < 0) return;
-        const s = currentScenarios[activeScenarioIdx];
-        let text = s.template;
-        s.params.forEach(p => {
-            const el = document.getElementById(`param-${p.id}`);
-            const val = el ? (el.value.trim() || p.placeholder || `[${p.label}]`) : `[${p.label}]`;
-            text = text.split(`{${p.id}}`).join(val);
-        });
-        document.getElementById('input').value = text;
-        document.getElementById('input').focus();
-        closeParamsPanel();
-    }
-
-    function handleKey(e) {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-    }
-
-    function esc(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    // ── Framework color map ──────────────────────────────────────────────────
-    const FW_COLORS = {
-        'LangGraph':             { color: '#00d4ff', bg: 'rgba(0,212,255,.08)',   border: 'rgba(0,212,255,.2)'   },
-        'LangChain':             { color: '#7fc244', bg: 'rgba(127,194,68,.08)',  border: 'rgba(127,194,68,.2)'  },
-        'LlamaIndex + ChromaDB': { color: '#ff4fa3', bg: 'rgba(255,79,163,.08)', border: 'rgba(255,79,163,.2)'  },
-        'SQLite':                { color: '#4088ff', bg: 'rgba(64,136,255,.08)',  border: 'rgba(64,136,255,.2)'  },
-        'GPT-4o':                { color: '#f0a500', bg: 'rgba(240,165,0,.08)',   border: 'rgba(240,165,0,.2)'   },
-        'Pandas':                { color: '#e040fb', bg: 'rgba(224,64,251,.08)',  border: 'rgba(224,64,251,.2)'  },
-        'n8n':                   { color: '#e87d3e', bg: 'rgba(232,125,62,.08)',  border: 'rgba(232,125,62,.2)'  },
-        'default':               { color: '#888898', bg: 'rgba(136,136,152,.06)', border: 'rgba(136,136,152,.15)'},
-    };
-
-    function buildTraceHtml(tools) {
-        if (!tools || tools.length === 0) return '';
-        const uid = 'trace_' + Date.now();
-        const steps = tools.map(t => {
-            const fw = FW_COLORS[t.framework] || FW_COLORS['default'];
-            return `<div class="trace-step" style="color:${fw.color}; background:${fw.bg}; border-color:${fw.border}">
-                <span style="opacity:.5; font-size:.6rem">▶</span>
-                <span style="color:${fw.color}; opacity:.75; font-size:.6rem">${esc(t.framework)}</span>
-                <span style="color:#444458; font-size:.6rem">·</span>
-                <span style="color:#aaaacc; font-size:.68rem">${esc(t.label)}</span>
-            </div>`;
-        }).join('');
-
-        return `<div class="mt-3 pt-2.5 border-t border-white/[.05]">
-            <button class="trace-toggle" onclick="toggleTrace('${uid}')">
-                <span id="${uid}_arrow" style="font-size:.6rem">▶</span>
-                <span>${tools.length} tool${tools.length > 1 ? 's' : ''} fired</span>
-            </button>
-            <div id="${uid}" class="trace-panel">${steps}</div>
-        </div>`;
-    }
-
-    function toggleTrace(uid) {
-        const panel = document.getElementById(uid);
-        const arrow = document.getElementById(uid + '_arrow');
-        const open = panel.classList.toggle('open');
-        arrow.textContent = open ? '▼' : '▶';
-    }
-
-    function addMessage(role, content, tools) {
-        const box = document.getElementById('messages');
-        const div = document.createElement('div');
-        div.className = `flex items-start gap-3 msg-enter ${role === 'user' ? 'flex-row-reverse' : ''}`;
-
-        if (role === 'user') {
-            div.innerHTML = `
-                <div class="w-7 h-7 rounded-full flex items-center justify-center font-semibold text-xs flex-shrink-0"
-                     style="background:#1e1e30; border:1px solid rgba(255,255,255,.08); color:#6868a0">W</div>
-                <div class="rounded-2xl rounded-tr-sm px-4 py-3 max-w-lg"
-                     style="background:rgba(240,165,0,.09); border:1px solid rgba(240,165,0,.2)">
-                    <p class="text-sm whitespace-pre-wrap" style="color:#e8e8f0">${esc(content)}</p>
-                </div>`;
-        } else {
-            div.innerHTML = `
-                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                     style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 12px -2px rgba(240,165,0,.35)">A</div>
-                <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-2xl md-body"
-                     style="background:rgba(16,16,26,.92); border:1px solid rgba(255,255,255,.07)">
-                    ${marked.parse(content)}
-                    ${buildTraceHtml(tools)}
-                </div>`;
-        }
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    }
-
-    const thinkingLabels = {
-        sales:        ['Searching catalog…', 'Checking stock…', 'Building quote…', 'Reviewing orders…'],
-        distribution: ['Checking shipments…', 'Scanning inventory…', 'Reviewing orders…', 'Checking delays…'],
-        finance:      ['Querying invoices…', 'Calculating totals…', 'Checking balances…', 'Running VAT calc…'],
-        service:      ['Looking up tickets…', 'Checking warranty…', 'Reviewing repairs…', 'Pulling history…'],
-    };
-
-    function addTyping() {
-        const labels = thinkingLabels[currentDept] || ['Thinking…'];
-        const label = labels[Math.floor(Math.random() * labels.length)];
-        const box = document.getElementById('messages');
-        const div = document.createElement('div');
-        div.id = 'typing';
-        div.className = 'flex items-start gap-3';
-        div.innerHTML = `
-            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                 style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 12px -2px rgba(240,165,0,.35)">A</div>
-            <div class="rounded-2xl rounded-tl-sm px-4 py-3"
-                 style="background:rgba(16,16,26,.92); border:1px solid rgba(255,255,255,.07)">
-                <div class="flex gap-2 items-center h-5">
-                    <div class="flex gap-1.5 items-center">
-                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                    </div>
-                    <span id="thinking-label" class="text-xs" style="color:#44445a">${label}</span>
-                </div>
-            </div>`;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    }
-
-    async function sendMessage() {
-        const inp = document.getElementById('input');
-        const msg = inp.value.trim();
-        if (!msg || isLoading) return;
-
-        isLoading = true;
-        inp.value = '';
-        document.getElementById('send-btn').disabled = true;
-        document.getElementById('welcome-msg')?.remove();
-
-        addMessage('user', msg);
-        addTyping();
-
-        try {
-            const res  = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ department: currentDept, message: msg })
-            });
-            const data = await res.json();
-            document.getElementById('typing')?.remove();
-            if (data.error) { addMessage('assistant', `Error: ${data.error}`, []); }
-            else { addMessage('assistant', data.response, data.tools || []); }
-        } catch (err) {
-            document.getElementById('typing')?.remove();
-            addMessage('assistant', 'Network error — please check the server is running.', []);
-        } finally {
-            isLoading = false;
-            document.getElementById('send-btn').disabled = false;
-        }
-    }
-
-    function clearChat() {
-        fetch('/api/reset', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ department: currentDept }) });
-        const box = document.getElementById('messages');
-        box.innerHTML = `
-            <div id="welcome-msg" class="flex items-start gap-3 msg-enter">
-                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                     style="background:linear-gradient(135deg,#f0a500,#e05500); box-shadow:0 0 14px -2px rgba(240,165,0,.4)">A</div>
-                <div class="rounded-2xl rounded-tl-sm px-4 py-3 max-w-md"
-                     style="background:rgba(18,18,28,.85); border:1px solid rgba(255,255,255,.07)">
-                    <p class="text-sm font-medium mb-1.5" style="color:#e8e8f0">Welcome to AMT AI</p>
-                    <p class="text-xs leading-relaxed" style="color:#7070a0">Pick a department → select a scenario → fill in the details → hit <strong style="color:#f0a500">Generate Prompt</strong> to pre-fill a ready-to-send message. Or type freely below.</p>
-                </div>
-            </div>`;
-    }
-
-    // ── Quick demo queries per dept ──────────────────────────────────────────
-    const quickQueries = {
-        sales: [
-            { label: '📦 DJI stock levels',    q: 'What is our current stock level for all DJI products?' },
-            { label: '💰 Cinema kit AED 100k', q: 'Build a cinema camera kit quote under AED 100,000 for a film production client.' },
-            { label: '📋 MBC Group orders',    q: 'Pull up the full order history for MBC Group.' },
-        ],
-        distribution: [
-            { label: '🚨 Delayed shipments',   q: 'Show me all delayed or customs-held shipments right now.' },
-            { label: '📉 Low stock alert',     q: 'Which products are running critically low on stock?' },
-            { label: '📦 Open purchase orders', q: 'Show all open purchase orders and their delivery status.' },
-        ],
-        finance: [
-            { label: '🔴 Overdue invoices',    q: 'Show me all overdue invoices.' },
-            { label: '💵 2026 revenue',        q: 'Give me a full revenue and outstanding balance summary for 2026.' },
-            { label: '👤 KSA Drone balance',   q: 'What is the outstanding balance for KSA Drone Solutions?' },
-        ],
-        service: [
-            { label: '🔧 All open tickets',    q: 'Show me all open service and repair tickets.' },
-            { label: '✅ Ready for pickup',    q: 'Which devices are repaired and ready for customer collection?' },
-            { label: '📬 Log new repair',      q: 'Log a new repair ticket for Rami Yousef — DJI RS 4 Pro, serial RS4P-XX0099, motor overheating on axis 2, out of warranty.' },
-        ],
-    };
-
-    function renderQuickQueries(dept) {
-        const queries = quickQueries[dept] || [];
-        const c = deptConfig[dept];
-        const scenariosEl = document.getElementById('scenarios');
-
-        document.getElementById('quick-section')?.remove();
-
-        const wrap = document.createElement('div');
-        wrap.id = 'quick-section';
-        wrap.className = 'flex flex-wrap gap-2 py-2.5 border-t border-white/[.04] w-full';
-        wrap.innerHTML = `<span class="section-label self-center mr-1 flex-shrink-0">Live Data</span>` +
-            queries.map(q => `
-                <button onclick="fireQuery(${JSON.stringify(q.q).replace(/'/g,"\\'")})"
-                        class="quick-btn text-xs px-3 py-1.5 rounded-full border flex-shrink-0 font-medium"
-                        style="border-color:rgba(${c.rgb},.28); color:${c.color}; background:rgba(${c.rgb},.06)">
-                    ${q.label}
-                </button>`).join('');
-        scenariosEl.parentNode.insertBefore(wrap, scenariosEl.nextSibling);
-    }
-
-    function hexToRgb(hex) {
-        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-        return `${r},${g},${b}`;
-    }
-
-    function fireQuery(q) {
-        document.getElementById('input').value = q;
-        sendMessage();
-    }
-
-    // ── Stats bar ────────────────────────────────────────────────────────────
-    let allStats = null;
-
-    async function loadStats() {
-        try {
-            const res = await fetch('/api/stats');
-            allStats = await res.json();
-            renderStats(currentDept);
-        } catch(e) {
-            document.getElementById('stats-bar').style.display = 'none';
-        }
-    }
-
-    function renderStats(dept) {
-        const bar = document.getElementById('stats-bar');
-        if (!allStats) return;
-        const s = allStats[dept];
-        const c = deptConfig[dept];
-
-        const cards = {
-            sales: [
-                { icon:'📦', value: s.products,      label: 'Products in Catalog' },
-                { icon:'📋', value: s.orders_active,  label: 'Active Orders', alert: false },
-                { icon:'🏆', value: s.top_brand,      label: 'Top Brand' },
-            ],
-            distribution: [
-                { icon:'🚨', value: s.delayed,        label: 'Delayed / Customs', alert: s.delayed > 0 },
-                { icon:'✈️', value: s.in_transit,     label: 'In Transit' },
-                { icon:'📉', value: s.low_stock,      label: 'Low Stock Items', alert: s.low_stock > 2 },
-            ],
-            finance: [
-                { icon:'🔴', value: s.overdue,        label: 'Overdue Invoices', alert: s.overdue > 0 },
-                { icon:'💵', value: `AED ${Number(s.outstanding_aed).toLocaleString()}`, label: 'Outstanding' },
-                { icon:'📄', value: s.unpaid,         label: 'Unpaid Invoices' },
-            ],
-            service: [
-                { icon:'🔧', value: s.open,           label: 'Open Tickets', alert: s.open > 0 },
-                { icon:'⚙️', value: s.in_repair,      label: 'In Repair' },
-                { icon:'✅', value: s.ready,          label: 'Ready for Collection', alert: s.ready > 0 },
-            ],
-        }[dept] || [];
-
-        bar.innerHTML = cards.map(card => {
-            const clr = card.alert ? '#ff5555' : c.color;
-            const rgb = card.alert ? '255,85,85' : c.rgb;
-            return `<div class="stat-card flex items-center gap-2.5 px-3.5 py-2 rounded-xl border flex-shrink-0 ${card.alert ? 'stat-alert' : ''}"
-                         style="background:rgba(${rgb},.06); border-color:rgba(${rgb},.22)">
-                <span class="text-base leading-none">${card.icon}</span>
-                <div>
-                    <p class="text-sm font-bold leading-tight" style="color:${clr}">${card.value}</p>
-                    <p class="leading-tight" style="color:#2e2e48; font-size:.62rem; letter-spacing:.02em">${card.label}</p>
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    // ── Override setDept to also refresh stats + quick queries ───────────────
-    const _origSetDept = setDept;
-    setDept = function(dept) {
-        _origSetDept(dept);
-        renderStats(dept);
-        renderQuickQueries(dept);
-    };
-
-    async function restartServer() {
-        const btn = document.getElementById('restart-btn');
-        btn.textContent = '↺ Restarting…';
-        btn.style.color = '#f0a500';
-        btn.disabled = true;
-        await fetch('/api/restart', { method: 'POST' });
-        setTimeout(() => {
-            const poll = setInterval(async () => {
-                try {
-                    await fetch('/api/stats');
-                    clearInterval(poll);
-                    location.reload();
-                } catch {}
-            }, 500);
-        }, 800);
-    }
-
-    // Init
-    setDept('sales');
-    loadStats();
+// ── CSV export from metric modal ───────────────────────────────────────
+let _modalExportData = null;
+function exportModalCSV() {
+  if (!_modalExportData) return;
+  const { rows, cols, label } = _modalExportData;
+  const header = cols.map(c => `"${c.l}"`).join(',');
+  const body = rows.map(row => cols.map(c => `"${String(row[c.k] ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `AMT_${label.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 </script>
+
+<!-- Metric detail modal -->
+<div class="modal-overlay" id="metric-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-accent" id="modal-accent"></div>
+      <div class="modal-title" id="modal-title">Details</div>
+      <button class="modal-export-btn" id="modal-export-btn" onclick="exportModalCSV()" style="display:none" title="Export to CSV">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        CSV
+      </button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
 </body>
 </html>

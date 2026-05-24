@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en" id="html-root">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMT AI — Sign In</title>
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+:root {
+  --bg-base:#04040a; --glass-fill:rgba(255,255,255,.028);
+  --glass-border:rgba(255,255,255,.07); --glass-border-strong:rgba(255,255,255,.11);
+  --text-primary:#ececf5; --text-body:#ccccdc; --text-secondary:#7a7a9a; --text-tertiary:#565670;
+  --gold:#f0a500; --radius-md:12px; --radius-lg:16px;
+  --t:240ms cubic-bezier(.2,.6,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg-base);color:var(--text-body);font-size:14px;display:grid;place-items:center;}
+button,input{font-family:inherit;color:inherit;background:none;border:none;outline:none;}
+:focus-visible{outline:2px solid rgba(240,165,0,.5);outline-offset:2px;border-radius:6px;}
+
+.bg-stage{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-bloom{position:absolute;left:50%;top:50%;width:1200px;height:1200px;transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side,rgba(40,50,110,.35),rgba(20,22,60,.18) 35%,rgba(8,8,22,0) 70%);
+  filter:blur(40px);animation:bloom-drift 24s ease-in-out infinite alternate;}
+@keyframes bloom-drift{0%{transform:translate(-52%,-52%) scale(1)}100%{transform:translate(-48%,-48%) scale(1.12)}}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);opacity:.5;}
+.bg-noise{position:absolute;inset:0;opacity:.025;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+
+.card{position:relative;z-index:1;width:360px;background:rgba(8,8,18,.72);border:1px solid var(--glass-border-strong);border-radius:var(--radius-lg);backdrop-filter:blur(28px);padding:36px 32px 32px;animation:card-in 480ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes card-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.brand-mark{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,rgba(240,165,0,.18),rgba(59,126,255,.18) 65%,rgba(16,217,122,.16));
+  border:1px solid rgba(255,255,255,.09);overflow:hidden;}
+.brand-mark img{width:28px;height:28px;object-fit:contain;}
+.brand-name{font-size:14px;font-weight:600;color:var(--text-primary);}
+.brand-sub{font-size:11px;color:var(--text-secondary);letter-spacing:.04em;text-transform:uppercase;}
+h1{font-size:20px;font-weight:600;color:var(--text-primary);margin-bottom:6px;letter-spacing:-.02em;}
+.sub{font-size:13px;color:var(--text-secondary);margin-bottom:28px;}
+.field{margin-bottom:14px;}
+label{display:block;font-size:11px;font-weight:500;color:var(--text-secondary);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+input[type=text],input[type=password]{display:block;width:100%;height:42px;padding:0 14px;
+  background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:10px;
+  color:var(--text-primary);font-size:13px;transition:border-color var(--t),background var(--t);}
+input[type=text]:focus,input[type=password]:focus{border-color:rgba(240,165,0,.5);background:rgba(255,255,255,.06);}
+input::placeholder{color:var(--text-tertiary);}
+.btn{display:block;width:100%;height:44px;margin-top:24px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(240,165,0,.85),rgba(240,165,0,.65));
+  border:1px solid rgba(240,165,0,.4);color:#1a0e00;font-size:14px;font-weight:600;
+  cursor:pointer;transition:opacity var(--t),transform var(--t),box-shadow var(--t);}
+.btn:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 8px 24px -4px rgba(240,165,0,.28);}
+.btn:active{transform:translateY(0);opacity:.85;}
+.btn:disabled{opacity:.4;cursor:default;transform:none;}
+.err{display:none;margin-top:14px;padding:10px 13px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2);border-radius:8px;font-size:12px;color:#ff8080;}
+.err.visible{display:block;}
+
+[data-theme="light"]{--bg-base:#ede9df;--glass-fill:rgba(255,255,255,.68);--glass-border:rgba(0,0,0,.08);--glass-border-strong:rgba(0,0,0,.14);--text-primary:#0e0e22;--text-body:#2b2b42;--text-secondary:#686884;--text-tertiary:#9898b2;}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] .bg-bloom{opacity:.3;filter:blur(60px);}
+[data-theme="light"] .card{background:rgba(255,255,255,.82);border-color:rgba(0,0,0,.12);}
+[data-theme="light"] input[type=text],[data-theme="light"] input[type=password]{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:var(--text-primary);}
+[data-theme="light"] input[type=text]:focus,[data-theme="light"] input[type=password]:focus{background:rgba(0,0,0,.06);border-color:rgba(240,165,0,.6);}
+[data-theme="light"] .btn{color:#3a1e00;}
+  </style>
+</head>
+<body>
+<div class="bg-stage" aria-hidden="true">
+  <div class="bg-bloom"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-noise"></div>
+</div>
+
+<div class="card">
+  <div class="logo-row">
+    <div class="brand-mark">
+      <img src="/static/amt_logo.webp" alt="AMT"
+           onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-weight:700;color:#f0a500;font-size:12px\'>AMT</span>'" />
+    </div>
+    <div>
+      <div class="brand-name">AMT AI Assistant</div>
+      <div class="brand-sub">Advanced Media Trading</div>
+    </div>
+  </div>
+  <h1>Sign in</h1>
+  <p class="sub">Internal access only</p>
+  <form id="login-form" onsubmit="doLogin(event)">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="admin" autocomplete="username" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required />
+    </div>
+    <button class="btn" type="submit" id="submit-btn">Sign in</button>
+    <div class="err" id="err-msg">Invalid username or password.</div>
+  </form>
+</div>
+
+<script>
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const err = document.getElementById('err-msg');
+  err.classList.remove('visible');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value,
+      }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      window.location.href = d.redirect || '/';
+    } else {
+      err.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  } catch {
+    err.textContent = 'Connection error. Please try again.';
+    err.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+// Allow Enter in password field
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-form').requestSubmit();
+});
+</script>
+</body>
+</html>

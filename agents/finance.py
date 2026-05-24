@@ -258,6 +258,7 @@ def run(user_message: str, history: list) -> str:
             max_tokens=1500
         )
 
+        trace.add_tokens(response.usage)
         msg = response.choices[0].message
 
         if not msg.tool_calls:

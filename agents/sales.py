@@ -41,7 +41,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_customer_orders",
-            "description": "Look up order history for a customer by name or company.",
+            "description": "Look up order history for a specific customer by name or company.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -54,12 +54,29 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "get_stock_level",
-            "description": "Check current stock level for a specific product by SKU or model name.",
+            "name": "get_active_orders",
+            "description": "Get all active sales orders across all customers. Use when asked for 'active orders', 'confirmed orders', 'pending orders', 'open orders', or any broad order status overview with no specific customer mentioned.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "product": {"type": "string", "description": "Product SKU or model name"}
+                    "status_filter": {
+                        "type": "string",
+                        "description": "Optional status filter: 'pending', 'confirmed', 'shipped', or 'all' (default: 'all' active statuses)"
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_stock_level",
+            "description": "Check current stock levels. Accepts a product SKU, model name, brand name, or category (camera/drone/lens/audio/lighting). Use for questions like 'stock on Sony FX cameras' or 'DJI drone inventory'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product": {"type": "string", "description": "Product SKU, model name, brand, or category keyword"}
                 },
                 "required": ["product"]
             }
@@ -94,20 +111,54 @@ def get_customer_orders(customer_name: str) -> list:
     """, (f"%{customer_name}%", f"%{customer_name}%"))
 
 
+def get_active_orders(status_filter: str = "all") -> list:
+    trace.log("get_active_orders", "SQLite", f"Active orders — filter: '{status_filter}'")
+    if status_filter in ("pending", "confirmed", "shipped"):
+        statuses = (status_filter,)
+        placeholders = "?"
+    else:
+        statuses = ("pending", "confirmed", "shipped")
+        placeholders = "?,?,?"
+    return query(f"""
+        SELECT o.order_ref, c.name AS customer, c.company, c.country,
+               o.order_date, o.status, o.total_aed, o.sales_rep
+        FROM orders o JOIN customers c ON c.id = o.customer_id
+        WHERE o.status IN ({placeholders})
+        ORDER BY o.order_date DESC
+    """, statuses)
+
+
 def get_stock_level(product: str) -> list:
     trace.log("get_stock_level", "SQLite", f"Stock check: '{product}'")
-    return query("""
-        SELECT p.sku, p.brand, p.model, i.qty_on_hand, i.qty_reserved,
-               (i.qty_on_hand - i.qty_reserved) AS qty_available
+    # Search compound phrase AND each individual word (handles "Sony FX", "DJI drone", etc.)
+    words = [w for w in product.split() if len(w) > 2]
+    all_terms = [product] + words
+    seen = set()
+    unique_terms = [t for t in all_terms if not (t in seen or seen.add(t))]
+    conditions, params = [], []
+    for term in unique_terms:
+        kw = f"%{term}%"
+        conditions.append("(p.sku LIKE ? OR p.model LIKE ? OR p.brand LIKE ? OR p.category LIKE ?)")
+        params.extend([kw, kw, kw, kw])
+    where = " OR ".join(conditions)
+    return query(f"""
+        SELECT p.sku, p.brand, p.model, p.category,
+               SUM(i.qty_on_hand) AS qty_on_hand,
+               SUM(i.qty_reserved) AS qty_reserved,
+               SUM(i.qty_on_hand - i.qty_reserved) AS qty_available,
+               MAX(i.reorder_point) AS reorder_point
         FROM products p JOIN inventory i ON i.product_id = p.id
-        WHERE p.sku LIKE ? OR p.model LIKE ?
-    """, (f"%{product}%", f"%{product}%"))
+        WHERE {where}
+        GROUP BY p.id, p.sku, p.brand, p.model, p.category
+        ORDER BY p.brand, p.model
+    """, tuple(params))
 
 
 TOOL_MAP = {
     "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "search_products": search_products,
     "get_customer_orders": get_customer_orders,
+    "get_active_orders": get_active_orders,
     "get_stock_level": get_stock_level,
 }
 
@@ -200,7 +251,7 @@ def _build_quote_html(from_name: str, data: dict) -> str:
     </table>
     {notes_html}
     <p style="margin:28px 0 0;font-size:14px">Kind regards,<br><strong>{data.get('sales_rep', 'AMT Sales Team')}</strong><br>
-    <span style="color:#888;font-size:12px">Advanced Media Trading LLC &nbsp;|&nbsp; sales@amt.tv &nbsp;|&nbsp; +971 4 XXX XXXX</span></p>
+    <span style="color:#888;font-size:12px">Advanced Media Trading LLC &nbsp;|&nbsp; sales@amt.tv &nbsp;|&nbsp; +971 4 447 6000</span></p>
   </div>
   <div style="text-align:center;padding:12px;font-size:11px;color:#aaa">
     This quotation is valid for 14 days. Prices are in AED and subject to VAT.
@@ -257,7 +308,7 @@ def run(user_message: str, history: list) -> str:
             tool_choice="auto",
             max_tokens=1500
         )
-
+        trace.add_tokens(response.usage)
         msg = response.choices[0].message
 
         if not msg.tool_calls:

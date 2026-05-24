@@ -17,7 +17,6 @@
         }
         .glass { background: rgba(14,14,20,.88); backdrop-filter: blur(14px); }
 
-        /* ── Domain card ── */
         .domain-card {
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,.07);
@@ -27,7 +26,6 @@
         }
         .domain-card:hover { transform: translateY(-2px); }
 
-        /* ── Tool pill ── */
         .tool-pill {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 5px 10px; border-radius: 8px;
@@ -39,7 +37,6 @@
         .tool-pill:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.15); }
         .tool-pill.active { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
 
-        /* ── Tool detail panel ── */
         .tool-detail {
             display: none;
             animation: slideIn .2s cubic-bezier(.16,1,.3,1) both;
@@ -50,12 +47,14 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Table row ── */
         .table-row {
             display: flex; align-items: flex-start; gap: 12px;
             padding: 10px 14px;
             border-bottom: 1px solid rgba(255,255,255,.04);
+            cursor: default;
         }
+        .table-row.clickable { cursor: pointer; transition: background .15s; }
+        .table-row.clickable:hover { background: rgba(255,255,255,.03); }
         .table-row:last-child { border-bottom: none; }
 
         .type-badge {
@@ -63,34 +62,118 @@
             padding: 2px 7px; border-radius: 6px; flex-shrink: 0; margin-top: 1px;
         }
 
-        /* ── Stat chip ── */
+        /* ── Schema expand panel ── */
+        .schema-panel {
+            display: none;
+            padding: 0 14px 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            animation: slideIn .18s cubic-bezier(.16,1,.3,1) both;
+        }
+        .schema-panel.open { display: block; }
+        .schema-inner {
+            background: rgba(0,0,0,.3);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .schema-col-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 10px;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            font-size: .71rem;
+        }
+        .schema-col-row:last-child { border-bottom: none; }
+        .schema-col-name {
+            font-family: monospace; color: #c8d8ff; min-width: 160px;
+        }
+        .schema-col-name.pk { color: #f0a500; }
+        .col-type-badge {
+            font-size: .58rem; font-weight: 700; letter-spacing: .06em;
+            padding: 1px 6px; border-radius: 5px; flex-shrink: 0;
+        }
+        .pk-badge {
+            font-size: .58rem; font-weight: 700; letter-spacing: .06em;
+            padding: 1px 6px; border-radius: 5px;
+            background: rgba(240,165,0,.12); color: #c09040;
+            border: 1px solid rgba(240,165,0,.2); flex-shrink: 0;
+        }
+        .chevron { transition: transform .2s; color: #333355; font-size: .7rem; margin-left: auto; }
+        .chevron.open { transform: rotate(90deg); }
+
         .stat-chip {
             display: flex; align-items: center; gap: 8px;
             padding: 10px 16px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,.07);
             background: rgba(255,255,255,.02);
         }
-
-        /* ── Section label ── */
         .slabel {
             font-size: .62rem; font-weight: 700; letter-spacing: .1em;
             text-transform: uppercase; color: #2e2e48;
         }
-
-        /* ── Param tag ── */
         .param-tag {
             font-size: .65rem; padding: 1px 7px; border-radius: 5px;
             background: rgba(255,255,255,.05); color: #66668a;
             border: 1px solid rgba(255,255,255,.07);
         }
         .param-tag.required { background: rgba(240,165,0,.08); color: #c09040; border-color: rgba(240,165,0,.2); }
-
-        /* ── Embedded badge ── */
         .embedded-badge {
             display: inline-flex; align-items: center; gap: 5px;
             font-size: .65rem; font-weight: 700; letter-spacing: .05em;
             padding: 3px 9px; border-radius: 20px;
         }
+
+        /* ── DB Schema section (bottom panel) ── */
+        #schema-section {
+            margin: 0 24px 32px;
+        }
+        .schema-section-title {
+            font-size: .7rem; font-weight: 700; letter-spacing: .12em;
+            text-transform: uppercase; color: #333360;
+            padding: 20px 0 10px;
+            border-top: 1px solid rgba(255,255,255,.05);
+        }
+        .schema-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 8px;
+        }
+        .schema-table-card {
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 10px;
+            background: rgba(14,14,22,.7);
+            overflow: hidden;
+        }
+        .schema-table-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            background: rgba(255,255,255,.02);
+            border-bottom: 1px solid rgba(255,255,255,.05);
+            transition: background .15s;
+        }
+        .schema-table-header:hover { background: rgba(255,255,255,.05); }
+        .schema-table-name {
+            font-family: monospace; font-size: .8rem; font-weight: 600;
+            color: #b0b8e0; flex: 1;
+        }
+        .schema-col-count {
+            font-size: .65rem; color: #333360;
+        }
+        .schema-cols-body {
+            display: none;
+            padding: 4px 0;
+        }
+        .schema-cols-body.open { display: block; }
+        .schema-field {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 12px;
+            font-size: .7rem;
+        }
+        .schema-field:hover { background: rgba(255,255,255,.02); }
+        .field-name {
+            font-family: monospace; color: #8898cc; flex: 1;
+        }
+        .field-name.pk { color: #f0a500; }
     </style>
 </head>
 <body>
@@ -124,22 +207,46 @@
     <div id="domains-grid" class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(540px, 1fr))"></div>
 </main>
 
+<!-- DB Schema section -->
+<div id="schema-section">
+    <p class="schema-section-title">Database Schema — SQLite (SAP SD/MM/FI/CS aligned)</p>
+    <div id="schema-grid" class="schema-grid"></div>
+</div>
+
 <script>
-async function load() {
-    const res = await fetch('/api/domains');
-    const domains = await res.json();
-    renderStats(domains);
-    renderGrid(domains);
+const TYPE_COLOR = {
+    INTEGER: { bg:'rgba(59,126,255,.12)', fg:'#6090ff',  border:'rgba(59,126,255,.2)'  },
+    TEXT:    { bg:'rgba(16,217,122,.1)',  fg:'#10d97a',  border:'rgba(16,217,122,.2)'  },
+    REAL:    { bg:'rgba(240,165,0,.1)',   fg:'#d4a020',  border:'rgba(240,165,0,.2)'   },
+    NUMERIC: { bg:'rgba(240,165,0,.1)',   fg:'#d4a020',  border:'rgba(240,165,0,.2)'   },
+    BLOB:    { bg:'rgba(168,85,247,.1)',  fg:'#a855f7',  border:'rgba(168,85,247,.2)'  },
+};
+function typeColor(t) {
+    const k = (t||'TEXT').split('(')[0].toUpperCase();
+    return TYPE_COLOR[k] || TYPE_COLOR.TEXT;
 }
 
-function renderStats(domains) {
+async function load() {
+    const [domainsRes, schemaRes] = await Promise.all([
+        fetch('/api/domains'),
+        fetch('/api/schema'),
+    ]);
+    const domains = await domainsRes.json();
+    const schema  = await schemaRes.json();
+    renderStats(domains, schema);
+    renderGrid(domains, schema);
+    renderSchemaSection(schema);
+}
+
+function renderStats(domains, schema) {
     const totalTools  = domains.reduce((s,d) => s + d.tools.length, 0);
     const totalTables = domains.reduce((s,d) => s + d.tables.length, 0);
+    const dbTables    = Object.keys(schema).length;
 
     document.getElementById('hdr-stats').innerHTML = [
         { label: 'Active Domains', value: domains.length, color: '#10d97a' },
         { label: 'Tools',          value: totalTools,     color: '#3b7eff' },
-        { label: 'Tables / Stores', value: totalTables,  color: '#9d5eff' },
+        { label: 'Tables / Stores', value: totalTables,   color: '#9d5eff' },
     ].map(s => `
         <div class="flex items-center gap-2 px-3 py-1 rounded-xl border border-white/[.06]" style="background:rgba(255,255,255,.02)">
             <span class="text-sm font-bold" style="color:${s.color}">${s.value}</span>
@@ -147,11 +254,11 @@ function renderStats(domains) {
         </div>`).join('');
 
     document.getElementById('stats-bar').innerHTML = [
-        { icon:'🔵', label:'Active Domains',   value: domains.length,  color:'#3b7eff' },
-        { icon:'🔧', label:'Mapped Tools',      value: totalTools,      color:'#10d97a' },
-        { icon:'🗄️', label:'Tables / Stores',  value: totalTables,     color:'#9d5eff' },
-        { icon:'✅', label:'Embedded',          value: `${domains.length}/${domains.length}`, color:'#10d97a' },
-        { icon:'⚡', label:'n8n Automations',   value: '5 workflows',   color:'#f0a500' },
+        { icon:'🔵', label:'Active Domains',    value: domains.length,  color:'#3b7eff' },
+        { icon:'🔧', label:'Mapped Tools',       value: totalTools,      color:'#10d97a' },
+        { icon:'🗄️', label:'Tables / Stores',   value: totalTables,     color:'#9d5eff' },
+        { icon:'📊', label:'DB Tables',          value: dbTables,        color:'#f0a500' },
+        { icon:'⚡', label:'n8n Automations',    value: '5 workflows',   color:'#f0a500' },
     ].map(s => `
         <div class="stat-chip">
             <span>${s.icon}</span>
@@ -162,11 +269,11 @@ function renderStats(domains) {
         </div>`).join('');
 }
 
-function renderGrid(domains) {
-    document.getElementById('domains-grid').innerHTML = domains.map(d => domainCard(d)).join('');
+function renderGrid(domains, schema) {
+    document.getElementById('domains-grid').innerHTML = domains.map(d => domainCard(d, schema)).join('');
 }
 
-function domainCard(d) {
+function domainCard(d, schema) {
     const toolsHtml = d.tools.map((t, i) => `
         <button onclick="toggleTool('${d.id}', ${i})"
                 id="pill-${d.id}-${i}"
@@ -186,31 +293,43 @@ function domainCard(d) {
             </div>
         </div>`).join('');
 
-    const tablesHtml = d.tables.map(t => {
-        const typeColors = {
-            'Table':       { bg:'rgba(64,136,255,.1)',  fg:'#4088ff',  border:'rgba(64,136,255,.2)'  },
-            'View':        { bg:'rgba(16,217,122,.1)',  fg:'#10d97a',  border:'rgba(16,217,122,.2)'  },
-            'Vector Store':{ bg:'rgba(255,79,163,.1)',  fg:'#ff4fa3',  border:'rgba(255,79,163,.2)'  },
-            'Engine':      { bg:'rgba(224,64,251,.1)',  fg:'#e040fb',  border:'rgba(224,64,251,.2)'  },
-            'Automation':  { bg:'rgba(255,107,53,.1)',  fg:'#ff6b35',  border:'rgba(255,107,53,.2)'  },
-        };
+    const typeColors = {
+        'Table':        { bg:'rgba(64,136,255,.1)',  fg:'#4088ff',  border:'rgba(64,136,255,.2)'  },
+        'View':         { bg:'rgba(16,217,122,.1)',  fg:'#10d97a',  border:'rgba(16,217,122,.2)'  },
+        'Vector Store': { bg:'rgba(255,79,163,.1)',  fg:'#ff4fa3',  border:'rgba(255,79,163,.2)'  },
+        'Engine':       { bg:'rgba(224,64,251,.1)',  fg:'#e040fb',  border:'rgba(224,64,251,.2)'  },
+        'Automation':   { bg:'rgba(255,107,53,.1)',  fg:'#ff6b35',  border:'rgba(255,107,53,.2)'  },
+    };
+
+    const tablesHtml = d.tables.map((t, ti) => {
         const tc = typeColors[t.type] || typeColors['Table'];
+        const isDb = t.type === 'Table' && schema[t.name];
+        const uid = `schema-${d.id}-${ti}`;
+        const colsHtml = isDb ? schema[t.name].map(col => {
+            const ct = typeColor(col.type);
+            return `<div class="schema-col-row">
+                <span class="schema-col-name ${col.pk ? 'pk' : ''}">${col.pk ? '🔑 ' : ''}${col.name}</span>
+                <span class="col-type-badge" style="background:${ct.bg};color:${ct.fg};border:1px solid ${ct.border}">${col.type||'TEXT'}</span>
+            </div>`;
+        }).join('') : '';
+
         return `
-            <div class="table-row">
+            <div class="table-row ${isDb ? 'clickable' : ''}" ${isDb ? `onclick="toggleSchema('${uid}')"` : ''}>
                 <span class="type-badge" style="background:${tc.bg}; color:${tc.fg}; border:1px solid ${tc.border}">${t.type}</span>
-                <div>
+                <div style="flex:1; min-width:0">
                     <p class="text-xs font-semibold mb-0.5" style="color:#d0d0e8; font-family: monospace">${t.name}</p>
                     <p class="text-xs" style="color:#44445a">${t.description}</p>
                 </div>
-            </div>`;
+                ${isDb ? `<span class="chevron" id="chev-${uid}">▶</span>` : ''}
+            </div>
+            ${isDb ? `<div class="schema-panel" id="${uid}">
+                <div class="schema-inner">${colsHtml}</div>
+            </div>` : ''}`;
     }).join('');
 
     return `
     <div class="domain-card" style="box-shadow: 0 0 0 0 ${d.color}">
-        <!-- Accent top bar -->
         <div style="height:3px; background:linear-gradient(90deg, ${d.color}, ${d.color}44)"></div>
-
-        <!-- Card header -->
         <div class="px-5 pt-4 pb-3" style="border-bottom:1px solid rgba(255,255,255,.05)">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3">
@@ -229,21 +348,52 @@ function domainCard(d) {
             </div>
             <p class="text-xs mt-3 leading-relaxed" style="color:#6666a0">${d.description}</p>
         </div>
-
-        <!-- Tools section -->
         <div class="px-5 pt-3.5 pb-3" style="border-bottom:1px solid rgba(255,255,255,.04)">
             <p class="slabel mb-2.5">Tools (${d.tools.length})</p>
-            <div class="flex flex-wrap gap-2">
-                ${toolsHtml}
-            </div>
+            <div class="flex flex-wrap gap-2">${toolsHtml}</div>
         </div>
-
-        <!-- Tables section -->
         <div>
             <p class="slabel px-5 pt-3.5 mb-0">Data Sources (${d.tables.length})</p>
             ${tablesHtml}
         </div>
     </div>`;
+}
+
+function renderSchemaSection(schema) {
+    const tables = Object.entries(schema).sort((a,b) => a[0].localeCompare(b[0]));
+    document.getElementById('schema-grid').innerHTML = tables.map(([name, cols]) => {
+        const colsHtml = cols.map(col => {
+            const ct = typeColor(col.type);
+            return `<div class="schema-field">
+                <span class="field-name ${col.pk ? 'pk' : ''}">${col.pk ? '🔑 ' : ''}${col.name}</span>
+                <span class="col-type-badge" style="background:${ct.bg};color:${ct.fg};border:1px solid ${ct.border}">${col.type||'TEXT'}</span>
+            </div>`;
+        }).join('');
+        return `
+        <div class="schema-table-card">
+            <div class="schema-table-header" onclick="toggleSchemaCard('stbl-${name}', this)">
+                <span style="font-size:.7rem; color:#333360">⊞</span>
+                <span class="schema-table-name">${name}</span>
+                <span class="schema-col-count">${cols.length} cols</span>
+                <span class="chevron" style="font-size:.65rem">▶</span>
+            </div>
+            <div class="schema-cols-body" id="stbl-${name}">${colsHtml}</div>
+        </div>`;
+    }).join('');
+}
+
+function toggleSchema(uid) {
+    const panel = document.getElementById(uid);
+    const chev  = document.getElementById('chev-' + uid);
+    const open  = panel.classList.toggle('open');
+    if (chev) chev.classList.toggle('open', open);
+}
+
+function toggleSchemaCard(id, header) {
+    const body = document.getElementById(id);
+    const chev = header.querySelector('.chevron');
+    const open = body.classList.toggle('open');
+    if (chev) chev.classList.toggle('open', open);
 }
 
 function toggleTool(domainId, idx) {
@@ -252,6 +402,19 @@ function toggleTool(domainId, idx) {
     const isOpen = detail.classList.toggle('open');
     pill.classList.toggle('active', isOpen);
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.schema-panel.open').forEach(p => {
+            p.classList.remove('open');
+            const chev = document.getElementById('chev-' + p.id);
+            if (chev) chev.classList.remove('open');
+        });
+        document.querySelectorAll('.schema-cols-body.open').forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.tool-detail.open').forEach(p => p.classList.remove('open'));
+        document.querySelectorAll('.tool-pill.active').forEach(p => p.classList.remove('active'));
+    }
+});
 
 load();
 </script>

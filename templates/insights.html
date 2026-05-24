@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Insights — AMT AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+:root{
+  --bg:#04040a;--glass:rgba(255,255,255,.028);--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.11);
+  --t1:#ececf5;--t2:#ccccdc;--t3:#7a7a9a;--t4:#565670;
+  --gold:#f0a500;--green:#10d97a;--blue:#3b7eff;--purple:#a855f7;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--t2);font-size:14px;}
+button{font-family:inherit;background:none;border:none;cursor:pointer;color:inherit;}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+*::-webkit-scrollbar{width:5px;}*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:99px;}
+
+.bg{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.bloom{position:absolute;left:50%;top:40%;width:1200px;height:1200px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(59,126,255,.14),rgba(16,40,80,.08) 40%,transparent 70%);filter:blur(40px);}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:56px 56px;opacity:.6;}
+
+.app{position:relative;z-index:1;display:grid;grid-template-rows:58px 1fr;height:100vh;}
+
+/* Header */
+header{display:flex;align-items:center;padding:0 22px;gap:16px;border-bottom:1px solid var(--border);background:rgba(8,8,16,.55);backdrop-filter:blur(18px);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(240,165,0,.18),rgba(59,126,255,.18));border:1px solid rgba(255,255,255,.09);}
+.brand-mark img{width:22px;height:22px;object-fit:contain;}
+.brand-name{font-size:13px;font-weight:500;color:var(--t1);}
+.h-sep{flex:1;}
+.page-title{font-size:14px;font-weight:500;color:var(--t1);display:flex;align-items:center;gap:8px;}
+.icon-btn{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:7px;border:1px solid transparent;color:var(--t3);font-size:12px;font-weight:500;transition:all 140ms;}
+.icon-btn:hover{color:var(--t1);background:rgba(255,255,255,.03);border-color:var(--border);}
+
+/* Body */
+.body{overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px;}
+
+/* AI Summary */
+.ai-summary{border-radius:var(--r);background:rgba(16,217,122,.05);border:1px solid rgba(16,217,122,.18);padding:16px 20px;display:flex;gap:14px;align-items:flex-start;}
+.ai-icon{width:30px;height:30px;border-radius:8px;background:rgba(16,217,122,.12);display:grid;place-items:center;flex-shrink:0;margin-top:1px;}
+.ai-summary-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6cf2ad;margin-bottom:6px;}
+.ai-summary-text{font-size:13px;color:var(--t2);line-height:1.65;}
+.ai-summary-text.loading{color:var(--t3);font-style:italic;}
+
+/* Charts grid */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;}
+.chart-card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:14px;}
+.chart-card.wide{grid-column:span 2;}
+@media(max-width:760px){.chart-card.wide{grid-column:span 1;}}
+.chart-head{display:flex;align-items:center;justify-content:space-between;}
+.chart-title{font-size:12.5px;font-weight:500;color:var(--t1);}
+.chart-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+.chart-accent{width:3px;height:16px;border-radius:3px;margin-right:10px;}
+.chart-wrap{position:relative;height:200px;}
+.chart-wrap.tall{height:260px;}
+
+/* Alert items */
+.alert-list{display:flex;flex-direction:column;gap:6px;}
+.alert-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,107,107,.05);border:1px solid rgba(255,107,107,.12);}
+.alert-badge{padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;background:rgba(255,107,107,.15);color:#ff6b6b;flex-shrink:0;}
+.alert-name{font-size:12px;color:var(--t2);flex:1;}
+.alert-qty{font-size:11px;color:var(--t3);}
+.reorder-btn{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.25);color:#ff6b6b;font-size:10.5px;font-weight:500;cursor:pointer;transition:background 160ms,border-color 160ms;flex-shrink:0;}
+.reorder-btn:hover{background:rgba(255,107,107,.22);border-color:rgba(255,107,107,.45);}
+
+/* Chart click cursor */
+.chart-wrap canvas{cursor:pointer;}
+
+/* Detail modal */
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(4,4,10,.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-panel{background:rgba(10,10,20,.97);border:1px solid rgba(255,255,255,.1);border-radius:12px;width:min(700px,92vw);max-height:78vh;display:flex;flex-direction:column;overflow:hidden;animation:panel-in 280ms cubic-bezier(.16,1,.3,1);}
+@keyframes panel-in{from{opacity:0;transform:translateY(10px) scale(.975)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.modal-accent{width:3px;height:20px;border-radius:3px;}
+.modal-title{font-size:14px;font-weight:500;color:#ececf5;flex:1;}
+.modal-close{width:26px;height:26px;border-radius:6px;color:#7a7a9a;font-size:13px;display:grid;place-items:center;cursor:pointer;transition:color 160ms,background 160ms;}
+.modal-close:hover{color:#ececf5;background:rgba(255,255,255,.06);}
+.modal-body{overflow-y:auto;padding:16px 20px;}
+.modal-table{width:100%;border-collapse:collapse;font-size:12px;}
+.modal-table th{text-align:left;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#7a7a9a;padding:0 12px 8px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+.modal-table td{padding:8px 12px 8px 0;border-bottom:1px solid rgba(255,255,255,.035);color:#ccccdc;vertical-align:middle;}
+.modal-table tr:last-child td{border-bottom:none;}
+
+/* Email draft modal */
+.email-modal-overlay{position:fixed;inset:0;z-index:210;background:rgba(4,4,10,.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;}
+.email-modal-overlay.open{display:flex;}
+.email-modal-panel{background:rgba(10,10,20,.98);border:1px solid rgba(255,255,255,.12);border-radius:12px;width:min(580px,92vw);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;animation:panel-in 280ms cubic-bezier(.16,1,.3,1);}
+.email-modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.email-modal-title{font-size:13px;font-weight:500;color:#ececf5;}
+.email-body-text{padding:16px 20px;font-size:12.5px;color:#ccccdc;line-height:1.65;white-space:pre-wrap;overflow-y:auto;flex:1;}
+.email-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid rgba(255,255,255,.07);}
+.copy-btn{padding:6px 14px;border-radius:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#ececf5;font-size:12px;font-weight:500;cursor:pointer;transition:background 160ms;}
+.copy-btn:hover{background:rgba(255,255,255,.1);}
+.copy-btn.primary{background:linear-gradient(180deg,#f0a500,#c98800);color:#1a1100;border:none;}
+.copy-btn.primary:hover{filter:brightness(1.08);}
+
+@keyframes fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.chart-card{animation:fade-up 400ms cubic-bezier(.16,1,.3,1) both;}
+.chart-card:nth-child(1){animation-delay:0ms}.chart-card:nth-child(2){animation-delay:50ms}
+.chart-card:nth-child(3){animation-delay:100ms}.chart-card:nth-child(4){animation-delay:150ms}
+.chart-card:nth-child(5){animation-delay:200ms}.chart-card:nth-child(6){animation-delay:250ms}
+.chart-card:nth-child(7){animation-delay:300ms}.chart-card:nth-child(8){animation-delay:350ms}
+  </style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="bloom"></div><div class="grid-bg"></div></div>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">
+        <img src="/static/amt_logo.webp" alt="AMT" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-weight:700;color:#f0a500;font-size:10px\'>AMT</span>'">
+      </div>
+      <span class="brand-name">AMT AI Assistant</span>
+    </div>
+    <div class="h-sep"></div>
+    <div class="page-title">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--blue)" stroke-width="1.7"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Business Insights
+    </div>
+    <div class="h-sep"></div>
+    <button class="icon-btn" onclick="location.href='/'">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>
+      Back to AI
+    </button>
+  </header>
+
+  <div class="body" id="body">
+    <div class="ai-summary">
+      <div class="ai-icon">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10d97a" stroke-width="1.8"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+      </div>
+      <div style="flex:1">
+        <div class="ai-summary-label">AI Business Summary</div>
+        <div class="ai-summary-text loading" id="ai-summary">Analyzing your data…</div>
+      </div>
+    </div>
+
+    <div class="charts-grid" id="charts-grid">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-accent" id="dm-accent"></div>
+      <div class="modal-title" id="dm-title">Details</div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dm-body"></div>
+  </div>
+</div>
+
+<!-- Email draft modal -->
+<div class="email-modal-overlay" id="email-modal" onclick="if(event.target===this)closeEmailModal()">
+  <div class="email-modal-panel">
+    <div class="email-modal-head">
+      <span class="email-modal-title" id="email-modal-title">Draft Reorder Email</span>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="email-body-text" id="email-body-text"></div>
+    <div class="email-modal-foot">
+      <button class="copy-btn" onclick="closeEmailModal()">Close</button>
+      <button class="copy-btn primary" onclick="copyEmail()">Copy Email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#3b7eff','#10d97a','#f0a500','#a855f7','#f472b6','#fb923c','#34d399','#60a5fa'];
+const STATUS_COLORS = {
+  confirmed:'#3b7eff', shipped:'#10d97a', pending:'#f0a500', delivered:'#34d399', cancelled:'#ff6b6b',
+  paid:'#10d97a', unpaid:'#f0a500', overdue:'#ff6b6b',
+  open:'#a855f7', in_repair:'#f0a500', diagnosed:'#3b7eff', awaiting_parts:'#fb923c', ready:'#10d97a', closed:'#565670',
+  in_transit:'#3b7eff', delayed:'#ff6b6b', customs:'#fb923c', delivered_ship:'#10d97a',
+};
+
+Chart.defaults.color = '#7a7a9a';
+Chart.defaults.borderColor = 'rgba(255,255,255,.06)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+Chart.defaults.font.size = 11;
+
+function donut(id, labels, values, colors, onClickFn) {
+  const ch = new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: 'rgba(4,4,10,.6)', borderWidth: 2, hoverOffset: 6 }] },
+    options: {
+      cutout: '68%',
+      plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } } },
+      onClick: onClickFn ? (evt, els) => { if (els.length) onClickFn(labels[els[0].index], colors[els[0].index]); } : undefined,
+    }
+  });
+  return ch;
+}
+
+function bar(id, labels, values, color, horizontal, onClickFn) {
+  const axis = horizontal ? 'y' : 'x';
+  const ch = new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: values, backgroundColor: color + '99', borderColor: color, borderWidth: 1.5, borderRadius: 5 }] },
+    options: {
+      indexAxis: horizontal ? 'y' : 'x',
+      plugins: { legend: { display: false } },
+      scales: {
+        [axis]: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7a7a9a' } },
+        [axis === 'x' ? 'y' : 'x']: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7a7a9a' } }
+      },
+      onClick: onClickFn ? (evt, els) => { if (els.length) onClickFn(labels[els[0].index], color); } : undefined,
+    }
+  });
+  return ch;
+}
+
+// ── Detail modal helpers ────────────────────────────────────────────────
+const esc2 = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+async function openDetailModal(chart, key, title, color) {
+  document.getElementById('dm-accent').style.background = color;
+  document.getElementById('dm-title').textContent = title + ' — ' + key;
+  document.getElementById('dm-body').innerHTML = `<div style="text-align:center;padding:24px;color:#7a7a9a">Loading…</div>`;
+  document.getElementById('detail-modal').classList.add('open');
+  try {
+    const r = await fetch(`/api/insights-detail/${chart}/${encodeURIComponent(key)}`);
+    const d = await r.json();
+    if (d.error || !d.rows) {
+      document.getElementById('dm-body').innerHTML = `<div style="color:#ff6b6b;padding:16px">${d.error || 'No data'}</div>`;
+      return;
+    }
+    if (!d.rows.length) {
+      document.getElementById('dm-body').innerHTML = `<div style="text-align:center;padding:24px;color:#7a7a9a">No records found.</div>`;
+      return;
+    }
+    document.getElementById('dm-body').innerHTML = `
+      <table class="modal-table">
+        <thead><tr>${d.labels.map(l=>`<th>${esc2(l)}</th>`).join('')}</tr></thead>
+        <tbody>${d.rows.map(row=>`<tr>${d.fields.map(f=>`<td>${esc2(String(row[f]??'—'))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+      <div style="margin-top:8px;font-size:11px;color:#565670">${d.rows.length} record${d.rows.length!==1?'s':''}</div>`;
+  } catch(e) {
+    document.getElementById('dm-body').innerHTML = `<div style="color:#ff6b6b;padding:16px">Error: ${e.message}</div>`;
+  }
+}
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetailModal(); closeEmailModal(); } });
+
+// ── Email draft (AI-generated from live DB data) ────────────────────────
+async function openReorderEmail(brand, model, qty, reorderPt) {
+  document.getElementById('email-modal-title').textContent = `Draft Reorder — ${brand} ${model}`;
+  document.getElementById('email-body-text').textContent = 'Generating email from database…';
+  document.getElementById('email-modal').classList.add('open');
+  const copyBtn = document.querySelector('.copy-btn.primary');
+  if (copyBtn) { copyBtn.disabled = true; copyBtn.textContent = 'Generating…'; }
+  try {
+    const r = await fetch('/api/draft-reorder-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brand, model, qty_available: qty, reorder_point: reorderPt })
+    });
+    const d = await r.json();
+    document.getElementById('email-body-text').textContent = d.ok ? d.email : `Error: ${d.error}`;
+  } catch(e) {
+    document.getElementById('email-body-text').textContent = `Error: ${e.message}`;
+  } finally {
+    if (copyBtn) { copyBtn.disabled = false; copyBtn.textContent = 'Copy Email'; }
+  }
+}
+function closeEmailModal() { document.getElementById('email-modal').classList.remove('open'); }
+function copyEmail() {
+  const text = document.getElementById('email-body-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn.primary');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Email', 1800);
+  });
+}
+
+function line(id, labels, values, color) {
+  return new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels, datasets: [{ data: values, borderColor: color, backgroundColor: color + '18', fill: true, tension: 0.38, pointRadius: 3, pointBackgroundColor: color, borderWidth: 2 }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7a7a9a' } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7a7a9a', callback: v => 'AED ' + (v/1000).toFixed(0) + 'K' } }
+      }
+    }
+  });
+}
+
+function card(id, title, sub, accentColor, content) {
+  return `<div class="chart-card" id="cc-${id}">
+    <div class="chart-head">
+      <div style="display:flex;align-items:center">
+        <div class="chart-accent" style="background:${accentColor}"></div>
+        <div><div class="chart-title">${title}</div>${sub?`<div class="chart-sub">${sub}</div>`:''}</div>
+      </div>
+    </div>
+    ${content}
+  </div>`;
+}
+
+async function load() {
+  const [dataRes] = await Promise.all([fetch('/api/insights-data')]);
+  const d = await dataRes.json();
+
+  const grid = document.getElementById('charts-grid');
+  grid.innerHTML = [
+    card('revenue', 'Monthly Revenue', 'Confirmed + shipped orders (AED)', '#3b7eff',
+      `<div class="chart-wrap tall"><canvas id="ch-revenue"></canvas></div>`),
+    card('inv-status', 'Invoice Status', 'By count & value', '#f0a500',
+      `<div class="chart-wrap"><canvas id="ch-inv-status"></canvas></div>`),
+    card('stock-cat', 'Available Stock by Category', 'Units ready to ship', '#10d97a',
+      `<div class="chart-wrap tall"><canvas id="ch-stock-cat"></canvas></div>`),
+    card('order-status', 'Order Status', 'All orders', '#a855f7',
+      `<div class="chart-wrap"><canvas id="ch-order-status"></canvas></div>`),
+    card('top-brands', 'Top Brands in Orders', 'By order line frequency', '#f472b6',
+      `<div class="chart-wrap tall"><canvas id="ch-top-brands"></canvas></div>`),
+    card('shipment', 'Shipment Status', 'Inbound cargo', '#fb923c',
+      `<div class="chart-wrap"><canvas id="ch-shipment"></canvas></div>`),
+    card('ticket-status', 'Service Ticket Status', 'Current queue', '#a855f7',
+      `<div class="chart-wrap"><canvas id="ch-ticket-status"></canvas></div>`),
+    card('countries', 'Orders by Country', 'Customer geography', '#34d399',
+      `<div class="chart-wrap tall"><canvas id="ch-countries"></canvas></div>`),
+  ].join('');
+
+  // Low stock alert section if any
+  if (d.low_stock && d.low_stock.length > 0) {
+    grid.insertAdjacentHTML('afterbegin', card('low-stock', '⚠ Low Stock Alerts', `${d.low_stock.length} item${d.low_stock.length>1?'s':''} at or below reorder point`, '#ff6b6b',
+      `<div class="alert-list">${d.low_stock.map(r=>`
+        <div class="alert-row">
+          <div class="alert-badge">${r.qty_available} left</div>
+          <div class="alert-name">${r.brand} ${r.model}</div>
+          <div class="alert-qty">Reorder at ${r.reorder_point}</div>
+          <button class="reorder-btn" onclick="openReorderEmail('${r.brand.replace(/'/g,"\\'")}','${r.model.replace(/'/g,"\\'")}',${r.qty_available},${r.reorder_point})">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+            Draft Email
+          </button>
+        </div>`).join('')}
+      </div>`));
+  }
+
+  // Revenue
+  if (d.revenue_by_month?.length) {
+    line('ch-revenue', d.revenue_by_month.map(r=>r.month), d.revenue_by_month.map(r=>r.total), '#3b7eff');
+  }
+
+  // Invoice status — clickable segments
+  if (d.invoice_status?.length) {
+    const colors = d.invoice_status.map(r => STATUS_COLORS[r.status] || '#7a7a9a');
+    donut('ch-inv-status', d.invoice_status.map(r=>r.status), d.invoice_status.map(r=>r.n), colors,
+      (label, color) => openDetailModal('invoice-status', label, 'Invoice Status', color));
+  }
+
+  // Stock by category — clickable bars
+  if (d.stock_by_category?.length) {
+    bar('ch-stock-cat', d.stock_by_category.map(r=>r.category), d.stock_by_category.map(r=>r.qty), '#10d97a', true,
+      (label) => openDetailModal('stock-category', label, 'Stock', '#10d97a'));
+  }
+
+  // Order status — clickable segments
+  if (d.order_status?.length) {
+    const colors = d.order_status.map(r => STATUS_COLORS[r.status] || '#7a7a9a');
+    donut('ch-order-status', d.order_status.map(r=>r.status), d.order_status.map(r=>r.n), colors,
+      (label, color) => openDetailModal('order-status', label, 'Orders', color));
+  }
+
+  // Top brands — clickable bars
+  if (d.top_brands?.length) {
+    bar('ch-top-brands', d.top_brands.map(r=>r.brand), d.top_brands.map(r=>r.orders), '#f472b6', true,
+      (label) => openDetailModal('brand-orders', label, 'Orders by brand', '#f472b6'));
+  }
+
+  // Shipment status — clickable segments
+  if (d.shipment_status?.length) {
+    const colors = d.shipment_status.map(r => STATUS_COLORS[r.status] || STATUS_COLORS[r.status+'_ship'] || '#7a7a9a');
+    donut('ch-shipment', d.shipment_status.map(r=>r.status), d.shipment_status.map(r=>r.n), colors,
+      (label, color) => openDetailModal('shipment-status', label, 'Shipments', color));
+  }
+
+  // Service tickets — clickable segments
+  if (d.ticket_status?.length) {
+    const colors = d.ticket_status.map(r => STATUS_COLORS[r.status] || '#7a7a9a');
+    donut('ch-ticket-status', d.ticket_status.map(r=>r.status), d.ticket_status.map(r=>r.n), colors,
+      (label, color) => openDetailModal('ticket-status', label, 'Service Tickets', color));
+  }
+
+  // Countries — clickable bars
+  if (d.orders_by_country?.length) {
+    bar('ch-countries', d.orders_by_country.map(r=>r.country), d.orders_by_country.map(r=>r.n), '#34d399', true,
+      (label) => openDetailModal('country-orders', label, 'Orders', '#34d399'));
+  }
+
+  // AI summary
+  loadAISummary(d);
+}
+
+async function loadAISummary(d) {
+  try {
+    const payload = {
+      department: 'auto',
+      message: `You are a business analyst for AMT (Advanced Media Trading), a pro AV distributor in Dubai.
+Analyze this business data and write 2-3 sharp, actionable insights in plain English. Be specific with numbers. No bullet points, just flowing sentences.
+
+Revenue by month: ${JSON.stringify(d.revenue_by_month?.slice(-4))}
+Invoice status: ${JSON.stringify(d.invoice_status)}
+Stock alerts: ${JSON.stringify(d.low_stock)}
+Top brands ordered: ${JSON.stringify(d.top_brands?.slice(0,4))}
+Shipment status: ${JSON.stringify(d.shipment_status)}
+Service tickets: ${JSON.stringify(d.ticket_status)}`
+    };
+    const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    const data = await r.json();
+    const el = document.getElementById('ai-summary');
+    el.classList.remove('loading');
+    el.textContent = data.response || 'No summary available.';
+  } catch(e) {
+    document.getElementById('ai-summary').textContent = 'Could not generate summary.';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

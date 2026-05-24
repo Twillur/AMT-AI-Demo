@@ -1,0 +1,85 @@
+{
+  "name": "AMT: Log New Repair Ticket",
+  "nodes": [
+    {
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "amt-new-ticket",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "node-email",
+      "name": "Send Ticket Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "fromEmail": "williamkoju@gmail.com",
+        "toEmail": "williamkoju@gmail.com",
+        "subject": "=\"[AMT Service] New Repair Ticket ? \" + $json.body.ticket_ref + \" | \" + $json.body.product",
+        "emailFormat": "html",
+        "html": "=`<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f0f2f5;color:#333}.wrap{max-width:600px;margin:30px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.1)}.hdr{background:#0d1b2a;padding:22px 28px}.hdr-title{color:#e8b94f;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}.body{padding:28px}.heading{font-size:20px;font-weight:700;color:#0d1b2a;margin-bottom:6px}table{width:100%;border-collapse:collapse;margin-top:18px;font-size:14px}td{padding:11px 14px;border-bottom:1px solid #f0f0f0}td:first-child{color:#888;font-weight:600;width:140px}td:last-child{color:#222}.badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}.green{background:#d4edda;color:#155724}.red{background:#f8d7da;color:#721c24}.ftr{background:#f8f9fa;padding:16px 28px;font-size:12px;color:#aaa;border-top:3px solid #e8b94f;text-align:center}</style></head><body><div class=\"wrap\"><div class=\"hdr\"><div class=\"hdr-title\">Advanced Media Trading &mdash; Service Center</div></div><div class=\"body\"><div class=\"heading\">New Repair Ticket Created</div><p style=\"color:#666;font-size:14px;margin-top:6px\">A repair request has been logged. Details below.</p><table><tr><td>Ticket Ref</td><td><strong>${$json.body.ticket_ref}</strong></td></tr><tr><td>Customer</td><td>${$json.body.customer}</td></tr><tr><td>Product</td><td>${$json.body.product}</td></tr><tr><td>Serial No.</td><td>${$json.body.serial_number || 'Not provided'}</td></tr><tr><td>Issue</td><td>${$json.body.issue}</td></tr><tr><td>Warranty</td><td><span class=\"badge ${$json.body.warranty_status === 'in_warranty' ? 'green' : 'red'}\">${$json.body.warranty_status === 'in_warranty' ? 'In Warranty' : 'Out of Warranty'}</span></td></tr><tr><td>Received</td><td>${$json.body.received_date}</td></tr><tr><td>Status</td><td><span class=\"badge green\">Open</span></td></tr></table></div><div class=\"ftr\">AMT Service Center &mdash; Al Quoz Industrial 4, Dubai &nbsp;|&nbsp; service@amt.tv</div></div></body></html>`",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "dewbi5kYEn7xi3ih",
+          "name": "Gmail SMTP - AMT Demo"
+        }
+      }
+    },
+    {
+      "id": "node-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "=JSON.stringify({ status: \"notified\", ticket_ref: $json.body.ticket_ref, timestamp: new Date().toISOString() })"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Ticket Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Ticket Notification": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
