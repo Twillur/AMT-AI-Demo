@@ -108,11 +108,12 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_all_orders",
-            "description": "Get ALL sales orders including delivered and historical ones. Use this for aggregate questions: average order value, total revenue, order counts, historical analysis. Pass status_filter='delivered' to see completed orders only, or leave blank for everything.",
+            "description": "Get ALL sales orders including delivered and historical ones. Use this for aggregate questions, historical analysis, or filtering by country. Pass status_filter='delivered' to see completed orders only. Pass country to filter by country (e.g. 'Saudi Arabia', 'UAE', 'Egypt').",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "status_filter": {"type": "string", "description": "Optional: 'pending','confirmed','shipped','delivered','all' (default: all statuses)"}
+                    "status_filter": {"type": "string", "description": "Optional: 'pending','confirmed','shipped','delivered','all' (default: all statuses)"},
+                    "country": {"type": "string", "description": "Optional: filter orders by customer country, e.g. 'Saudi Arabia', 'UAE', 'Egypt'"}
                 },
                 "required": []
             }
@@ -122,11 +123,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_order_analytics",
-            "description": "Aggregated sales analytics. Use for: 'which customer ordered most', 'which brand sells most', 'average order value', 'top products by sales', 'inactive customers'. Set metric to: 'customers' (order counts per customer), 'brands' (units sold per brand from order line items), 'products' (top selling products by qty), 'avg_value' (average order value), 'inactive_customers' (customers with no orders in 90+ days).",
+            "description": "Aggregated sales analytics. Use for: 'which customer ordered most', 'which brand sells most', 'average order value', 'top products by sales', 'inactive customers', 'which sales rep has most orders'. Set metric to: 'customers', 'brands', 'products', 'avg_value', 'inactive_customers', 'sales_reps'.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "metric": {"type": "string", "description": "One of: customers, brands, products, avg_value, inactive_customers"},
+                    "metric": {"type": "string", "description": "One of: customers, brands, products, avg_value, inactive_customers, sales_reps"},
                     "limit": {"type": "integer", "description": "Number of results (default 10)"}
                 },
                 "required": ["metric"]
@@ -233,22 +234,23 @@ def get_low_stock(threshold: int = 5) -> list:
     """, (threshold,))
 
 
-def get_all_orders(status_filter: str = "all") -> list:
-    trace.log("get_all_orders", "SQLite", f"All orders — filter: '{status_filter}'")
+def get_all_orders(status_filter: str = "all", country: str = None) -> list:
+    trace.log("get_all_orders", "SQLite", f"All orders — filter: '{status_filter}'" + (f", country: '{country}'" if country else ""))
+    conditions, params = [], []
     if status_filter in ("pending", "confirmed", "shipped", "delivered", "cancelled"):
-        return query("""
-            SELECT o.order_ref, c.name AS customer, c.company, c.country,
-                   o.order_date, o.status, o.total_aed, o.sales_rep
-            FROM orders o JOIN customers c ON c.id = o.customer_id
-            WHERE o.status = ?
-            ORDER BY o.order_date DESC
-        """, (status_filter,))
-    return query("""
+        conditions.append("o.status = ?")
+        params.append(status_filter)
+    if country:
+        conditions.append("c.country LIKE ?")
+        params.append(f"%{country}%")
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    return query(f"""
         SELECT o.order_ref, c.name AS customer, c.company, c.country,
                o.order_date, o.status, o.total_aed, o.sales_rep
         FROM orders o JOIN customers c ON c.id = o.customer_id
+        {where}
         ORDER BY o.order_date DESC
-    """)
+    """, tuple(params))
 
 
 def get_order_analytics(metric: str, limit: int = 10) -> list:
@@ -301,6 +303,16 @@ def get_order_analytics(metric: str, limit: int = 10) -> list:
             HAVING last_order_date < date('now', '-90 days') OR last_order_date IS NULL
             ORDER BY last_order_date ASC
         """)
+    if metric == "sales_reps":
+        return query("""
+            SELECT o.sales_rep,
+                   COUNT(o.id) AS total_orders,
+                   ROUND(SUM(o.total_aed), 0) AS total_value_aed,
+                   ROUND(AVG(o.total_aed), 0) AS avg_order_aed
+            FROM orders o
+            WHERE o.sales_rep IS NOT NULL
+            GROUP BY o.sales_rep ORDER BY total_orders DESC LIMIT ?
+        """, (limit,))
     return []
 
 
@@ -328,6 +340,8 @@ TOOL SELECTION RULES:
 - "top selling products" / "best selling products" / "most ordered products" → get_order_analytics(metric="products")
 - "average order value" / "avg order" → get_order_analytics(metric="avg_value")
 - "haven't ordered" / "inactive customers" / "no orders recently" → get_order_analytics(metric="inactive_customers")
+- "which sales rep" / "top sales rep" / "rep performance" → get_order_analytics(metric="sales_reps")
+- "orders from [country]" / "orders in UAE/Saudi/Egypt" → get_all_orders(country="[country]")
 - "all orders" / "order history" / "total orders" including delivered → get_all_orders
 - Active/current orders (pending/confirmed/shipped) → get_active_orders
 - Specific customer's order history → get_customer_orders
