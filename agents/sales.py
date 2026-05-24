@@ -93,6 +93,20 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_low_stock",
+            "description": "Returns products with stock below a given threshold. Use for 'low stock', 'running low', 'under X units', 'nearly out of stock' questions. Default threshold is 5 units.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "threshold": {"type": "integer", "description": "Max available units to include (default: 5)"}
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_all_orders",
             "description": "Get ALL sales orders including delivered and historical ones. Use this for aggregate questions: average order value, total revenue, order counts, historical analysis. Pass status_filter='delivered' to see completed orders only, or leave blank for everything.",
             "parameters": {
@@ -205,6 +219,20 @@ def get_out_of_stock() -> list:
     """)
 
 
+def get_low_stock(threshold: int = 5) -> list:
+    trace.log("get_low_stock", "SQLite", f"Products with stock <= {threshold} units")
+    return query("""
+        SELECT p.sku, p.brand, p.model, p.category, p.price_aed,
+               COALESCE(SUM(i.qty_on_hand - i.qty_reserved), 0) AS qty_available
+        FROM products p
+        LEFT JOIN inventory i ON i.product_id = p.id
+        WHERE p.is_active = 1
+        GROUP BY p.id
+        HAVING qty_available > 0 AND qty_available <= ?
+        ORDER BY qty_available ASC
+    """, (threshold,))
+
+
 def get_all_orders(status_filter: str = "all") -> list:
     trace.log("get_all_orders", "SQLite", f"All orders — filter: '{status_filter}'")
     if status_filter in ("pending", "confirmed", "shipped", "delivered", "cancelled"):
@@ -233,7 +261,7 @@ def get_order_analytics(metric: str, limit: int = 10) -> list:
                    ROUND(AVG(o.total_aed), 0) AS avg_order_aed,
                    MAX(o.order_date) AS last_order_date
             FROM orders o JOIN customers c ON c.id = o.customer_id
-            GROUP BY c.id ORDER BY total_orders DESC LIMIT ?
+            GROUP BY c.id ORDER BY total_value_aed DESC LIMIT ?
         """, (limit,))
     if metric == "brands":
         return query("""
@@ -283,6 +311,7 @@ TOOL_MAP = {
     "get_active_orders": get_active_orders,
     "get_stock_level": get_stock_level,
     "get_out_of_stock": get_out_of_stock,
+    "get_low_stock": get_low_stock,
     "get_all_orders": get_all_orders,
     "get_order_analytics": get_order_analytics,
 }
@@ -293,6 +322,7 @@ BRAND NAMES IN DATABASE: Use the short form — "Sony" (not "Sony Professional")
 
 TOOL SELECTION RULES:
 - "out of stock" / "not available" / "zero stock" → get_out_of_stock
+- "low stock" / "running low" / "under X units" / "nearly out" → get_low_stock(threshold=X)
 - "which customer ordered most" / "top customers" / "order count" → get_order_analytics(metric="customers")
 - "which brand sells most" / "best-selling brand" / "top brand by sales" → get_order_analytics(metric="brands")
 - "top selling products" / "best selling products" / "most ordered products" → get_order_analytics(metric="products")
