@@ -1,0 +1,17 @@
+{
+  "name": "AMT AI Assistant",
+  "short_name": "AMT AI",
+  "description": "AI-powered department assistant for Advanced Media Trading LLC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#04040a",
+  "theme_color": "#f0a500",
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

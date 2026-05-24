@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AMT AI Assistant</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#f0a500">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -411,6 +413,39 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
 [data-theme="light"] .qchip:hover{background:rgba(0,0,0,.08);}
 
 /* ── Vec-page footer fix ──────────────────────────────────────────────── */
+
+/* ── Stats meta row ──────────────────────────────────────────────────── */
+.stats-meta{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--text-secondary);letter-spacing:.16em;text-transform:uppercase;padding:0 2px;margin-top:2px;}
+#stats-updated{font-size:9px;text-transform:none;letter-spacing:0;color:var(--text-tertiary);font-weight:400;}
+
+/* ── Message copy button ─────────────────────────────────────────────── */
+.bubble.ai{position:relative;}
+.msg-copy-btn{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:transparent;border:1px solid transparent;color:var(--text-tertiary);cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf);opacity:0;}
+.message.ai:hover .msg-copy-btn{opacity:1;border-color:var(--glass-border);background:rgba(255,255,255,.04);}
+.msg-copy-btn:hover{color:var(--text-primary) !important;background:rgba(255,255,255,.09) !important;}
+[data-theme="light"] .msg-copy-btn:hover{background:rgba(0,0,0,.07) !important;}
+
+/* ── Follow-up chips (post-AI response) ──────────────────────────────── */
+.followup-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-left:44px;}
+.followup-chip{padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);color:var(--text-tertiary);font-size:11px;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf),transform 180ms;white-space:nowrap;}
+.followup-chip::before{content:'↪ ';opacity:.45;}
+.followup-chip:hover{color:var(--text-primary);background:rgba(255,255,255,.06);border-color:var(--glass-border-strong);transform:translateY(-1px);}
+[data-theme="light"] .followup-chip{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.09);color:var(--text-secondary);}
+[data-theme="light"] .followup-chip:hover{background:rgba(0,0,0,.07);}
+
+/* ── Keyboard shortcuts overlay ──────────────────────────────────────── */
+.shortcuts-overlay{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.52);backdrop-filter:blur(8px);animation:fade-in 160ms;}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.shortcuts-panel{background:rgba(10,10,22,.96);border:1px solid var(--glass-border-strong);border-radius:var(--radius-xl);padding:28px 32px;min-width:380px;max-width:480px;box-shadow:0 24px 64px rgba(0,0,0,.55);}
+[data-theme="light"] .shortcuts-panel{background:rgba(245,242,235,.97);border-color:rgba(0,0,0,.1);}
+.shortcuts-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.shortcuts-grid{display:flex;flex-direction:column;gap:2px;}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--glass-border);}
+.shortcut-row:last-child{border-bottom:none;}
+.shortcut-desc{font-size:12px;color:var(--text-body);}
+.shortcut-keys{display:flex;gap:4px;}
+.shortcut-key{padding:2px 8px;border-radius:5px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);font-size:11px;font-family:ui-monospace,monospace;color:var(--text-secondary);}
+[data-theme="light"] .shortcut-key{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.13);color:var(--text-secondary);}
   </style>
 </head>
 <body>
@@ -453,7 +488,10 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
         </div>
         <div class="briefing-text loading" id="briefing-text">Loading briefing…</div>
       </div>
-      <div class="sec-label">Live Metrics</div>
+      <div class="stats-meta">
+        <span class="sec-label" style="margin:0">Live Metrics</span>
+        <span id="stats-updated"></span>
+      </div>
       <div class="stats-grid stagger" id="stats-grid"></div>
       <div class="sec-label">Scenarios</div>
       <div class="scenarios stagger" id="scenarios-list"></div>
@@ -573,6 +611,11 @@ const ICO = {
   back:   '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>',
   clock:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   fire:   '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c1 4-3 5-3 9a5 5 0 0 0 10 0c0-3-2-5-3-7-1 3-4 2-4-2z"/></svg>',
+  copy:   '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  check:  '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>',
+  key:    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M21 8.5H11m0 0a5 5 0 0 0-3.5-1.5m3.5 1.5v3m4-3v3"/></svg>',
+  chart:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+  grid4:  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
 };
 
 // ── Dept config
@@ -646,6 +689,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupVoice();
   loadBriefing();
   fetchStats();
+  setInterval(fetchStats, 30000);
+  setInterval(_renderStatsUpdated, 10000);
   // Render initial chips for auto dept
   const ic = document.getElementById('initial-chips');
   if (ic) ic.innerHTML = QUICK_CHIPS.auto.map(c=>`<button class="qchip" onclick="sendChip(${JSON.stringify(c.q).replace(/"/g,'&quot;')})">${esc(c.label)}</button>`).join('');
@@ -737,7 +782,11 @@ function renderHeaderActions() {
       <button class="icon-btn" onclick="window.location.href='/history'" title="Chat History">${ICO.clock}</button>
       <button class="icon-btn" onclick="switchView('domains')" title="AI Domains">${ICO.globe}</button>
       <button class="icon-btn" onclick="switchView('vectors')" title="Vector Space">${ICO.layers}</button>
+      <button class="icon-btn" onclick="window.location.href='/overview'" title="Executive Overview">${ICO.grid4} Overview</button>
       <button class="icon-btn" id="restart-btn" onclick="restartServer()" title="Restart server">${ICO.refresh}</button>
+      <button class="icon-btn" onclick="toggleShortcuts()" title="Keyboard shortcuts (?)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+      </button>
       <button class="icon-btn" onclick="doLogout()" title="Sign out" style="color:var(--text-tertiary)">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       </button>
@@ -763,14 +812,27 @@ function switchView(view) {
 
 
 // ── Stats
+let _statsLastUpdated = 0;
+
 async function fetchStats() {
   try {
     const r = await fetch('/api/stats');
     allStats = await r.json();
+    _statsLastUpdated = Date.now();
     renderStatCards();
     renderScenarios();
     initNotifications(allStats);
+    _renderStatsUpdated();
   } catch(e) { console.error(e); }
+}
+
+function _renderStatsUpdated() {
+  const el = document.getElementById('stats-updated');
+  if (!el || !_statsLastUpdated) return;
+  const secs = Math.round((Date.now() - _statsLastUpdated) / 1000);
+  if (secs < 8) el.textContent = 'just now';
+  else if (secs < 60) el.textContent = secs + 's ago';
+  else el.textContent = Math.round(secs / 60) + 'm ago';
 }
 
 function buildStatCards(dept) {
@@ -987,8 +1049,10 @@ async function streamAIMessage(content, tools, tokens) {
 
   if (tools.length) {
     div.querySelector('.bubble.ai').insertAdjacentHTML('beforeend', buildPipelineHtml(tools, tokens));
-    box.scrollTop = box.scrollHeight;
   }
+  _addCopyBtn(div.querySelector('.bubble.ai'), content);
+  _renderFollowUps(div, currentDept, content);
+  box.scrollTop = box.scrollHeight;
 }
 
 function addUserMessage(text) {
@@ -1028,6 +1092,7 @@ function addAIMessage(content, tools, tokens) {
       ${buildPipelineHtml(tools, tokens)}
     </div>`;
   box.appendChild(div);
+  _addCopyBtn(div.querySelector('.bubble.ai'), content);
   box.scrollTop = box.scrollHeight;
 }
 
@@ -1506,11 +1571,31 @@ async function openMetricModal(metric, label, color) {
 function closeModal() {
   document.getElementById('metric-modal').classList.remove('open');
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => {
+  const inInput = e.target.matches('input,textarea');
+  if (e.key === 'Escape') { closeModal(); hideShortcuts(); }
+  if (!inInput) {
+    if (e.key === '?') toggleShortcuts();
+    if (e.key === 't' || e.key === 'T') toggleTheme();
+    if (e.key === 'ArrowLeft') {
+      const idx = DEPTS.findIndex(d => d.id === currentDept);
+      if (idx > 0) switchDept(DEPTS[idx - 1].id);
+    }
+    if (e.key === 'ArrowRight') {
+      const idx = DEPTS.findIndex(d => d.id === currentDept);
+      if (idx < DEPTS.length - 1) switchDept(DEPTS[idx + 1].id);
+    }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('msg-input')?.focus();
+  }
+});
 
 // ── Theme toggle ───────────────────────────────────────────────────────
 function initTheme() {
-  const saved = localStorage.getItem('amt-theme') || 'dark';
+  let saved = localStorage.getItem('amt-theme');
+  if (!saved) saved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   if (saved === 'light') document.getElementById('html-root').dataset.theme = 'light';
   else delete document.getElementById('html-root').dataset.theme;
   _updateThemeIcon(saved);
@@ -1631,6 +1716,112 @@ function toggleVoice() {
   const btn = document.getElementById('mic-btn');
   if (_voiceActive) { _recognizer.stop(); }
   else { _recognizer.start(); _voiceActive = true; btn.classList.add('recording'); }
+}
+
+// ── Toast notifications ────────────────────────────────────────────────
+function showToast(msg, color) {
+  const stack = document.getElementById('toast-stack');
+  if (!stack) return;
+  color = color || '#10d97a';
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<div class="toast-dot" style="color:${color}"></div><div class="toast-msg">${esc(msg)}</div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  stack.appendChild(t);
+  setTimeout(() => { t.classList.add('exit'); setTimeout(() => t.remove(), 240); }, 2800);
+}
+
+// ── Copy button helper ─────────────────────────────────────────────────
+function _addCopyBtn(bubble, text) {
+  if (!bubble) return;
+  const btn = document.createElement('button');
+  btn.className = 'msg-copy-btn';
+  btn.title = 'Copy response';
+  btn.innerHTML = ICO.copy;
+  btn.onclick = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = ICO.check;
+      btn.style.color = '#10d97a';
+      setTimeout(() => { btn.innerHTML = ICO.copy; btn.style.color = ''; }, 1600);
+      showToast('Copied to clipboard', '#10d97a');
+    });
+  };
+  bubble.appendChild(btn);
+}
+
+// ── Follow-up chips ────────────────────────────────────────────────────
+const FOLLOWUP_RULES = [
+  { kw:['invoice','overdue','outstanding','payment','vat','receivable'], chips:[
+    {label:'Full aging report', q:'Run a full aging report on all overdue invoices.'},
+    {label:'Top debtors?', q:'Who are our top 5 debtors by outstanding balance?'},
+    {label:'Collection rate?', q:'What is our invoice collection rate for 2026?'},
+  ]},
+  {kw:['shipment','customs','transit','cargo','delay','eta'], chips:[
+    {label:'All POs status?', q:'What is the status of all our open purchase orders?'},
+    {label:'Low stock alert?', q:'Which products are currently below reorder point?'},
+    {label:'Draft reorder email', q:'Draft a reorder email for our low stock items.'},
+  ]},
+  {kw:['ticket','repair','service','warranty','technician'], chips:[
+    {label:'All open tickets?', q:'Show me all open service tickets.'},
+    {label:'Ready to collect?', q:'Which tickets are ready for customer collection?'},
+    {label:'Longest waiting?', q:'Which repairs have been waiting longest?'},
+  ]},
+  {kw:['stock','inventory','reorder','sku','units'], chips:[
+    {label:'Low stock alerts?', q:'Which products are below reorder point?'},
+    {label:'Cinema quote', q:'Build a cinema kit quote for AED 200,000.'},
+    {label:'DJI inventory?', q:'What are current DJI inventory levels?'},
+  ]},
+  {kw:['quote','pricing','aed','usd','kit','camera'], chips:[
+    {label:'4K cinema kit', q:'Build a 4K cinema shoot kit quote under AED 80,000.'},
+    {label:'MBC Group orders', q:'Show all orders for MBC Group.'},
+    {label:'Check DJI stock', q:'What is our current DJI stock level?'},
+  ]},
+];
+
+function _pickFollowUps(content, dept) {
+  const lower = content.toLowerCase();
+  for (const rule of FOLLOWUP_RULES) {
+    if (rule.kw.some(k => lower.includes(k))) return rule.chips;
+  }
+  return (QUICK_CHIPS[dept] || QUICK_CHIPS.auto).slice(0, 3);
+}
+
+function _renderFollowUps(msgDiv, dept, content) {
+  const chips = _pickFollowUps(content, dept);
+  const row = document.createElement('div');
+  row.className = 'followup-chips';
+  row.innerHTML = chips.map(c => `<button class="followup-chip" onclick="sendChip(${JSON.stringify(c.q).replace(/"/g,'&quot;')})">${esc(c.label)}</button>`).join('');
+  msgDiv.appendChild(row);
+}
+
+// ── Keyboard shortcuts modal ───────────────────────────────────────────
+let _shortcutsOpen = false;
+function toggleShortcuts() { _shortcutsOpen ? hideShortcuts() : showShortcuts(); }
+
+function showShortcuts() {
+  if (_shortcutsOpen) return;
+  _shortcutsOpen = true;
+  const el = document.createElement('div');
+  el.id = 'shortcuts-overlay';
+  el.className = 'shortcuts-overlay';
+  el.onclick = e => { if (e.target === el) hideShortcuts(); };
+  el.innerHTML = `
+    <div class="shortcuts-panel">
+      <div class="shortcuts-title">${ICO.key} Keyboard Shortcuts</div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-row"><span class="shortcut-desc">Focus chat input</span><div class="shortcut-keys"><span class="shortcut-key">Ctrl</span><span class="shortcut-key">K</span></div></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Previous department</span><div class="shortcut-keys"><span class="shortcut-key">←</span></div></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Next department</span><div class="shortcut-keys"><span class="shortcut-key">→</span></div></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Toggle light / dark mode</span><div class="shortcut-keys"><span class="shortcut-key">T</span></div></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Close modal / dropdown</span><div class="shortcut-keys"><span class="shortcut-key">Esc</span></div></div>
+        <div class="shortcut-row"><span class="shortcut-desc">Show this overlay</span><div class="shortcut-keys"><span class="shortcut-key">?</span></div></div>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+}
+
+function hideShortcuts() {
+  _shortcutsOpen = false;
+  document.getElementById('shortcuts-overlay')?.remove();
 }
 
 // ── CSV export from metric modal ───────────────────────────────────────

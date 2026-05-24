@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AMT AI — Sign In</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#f0a500">
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(t==='light')document.documentElement.dataset.theme='light';})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>

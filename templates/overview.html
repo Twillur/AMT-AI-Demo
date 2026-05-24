@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en" id="html-root">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AMT — Executive Overview</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#f0a500">
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(!t)t=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(t==='light')document.documentElement.dataset.theme='light';})()</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+:root {
+  --bg-base:#04040a; --glass-fill:rgba(255,255,255,.028); --glass-fill-hover:rgba(255,255,255,.045);
+  --glass-border:rgba(255,255,255,.07); --glass-border-strong:rgba(255,255,255,.11);
+  --text-primary:#ececf5; --text-body:#ccccdc; --text-secondary:#7a7a9a; --text-tertiary:#565670;
+  --gold:#f0a500; --sales:#3b7eff; --distribution:#10d97a; --finance:#f0a500; --service:#a855f7;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:22px;
+  --tf:160ms cubic-bezier(.2,.6,.2,1); --t:240ms cubic-bezier(.2,.6,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg-base);color:var(--text-body);font-family:'Inter',ui-sans-serif,system-ui,sans-serif;font-size:14px;-webkit-font-smoothing:antialiased;}
+button{font-family:inherit;color:inherit;background:none;border:none;outline:none;cursor:pointer;}
+::selection{background:rgba(240,165,0,.3);color:var(--text-primary);}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
+*::-webkit-scrollbar{width:5px;} *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:999px;}
+
+/* Light mode */
+[data-theme="light"]{
+  --bg-base:#f0ede6; --glass-fill:rgba(255,255,255,.65); --glass-fill-hover:rgba(255,255,255,.8);
+  --glass-border:rgba(0,0,0,.08); --glass-border-strong:rgba(0,0,0,.14);
+  --text-primary:#0e0e22; --text-body:#2b2b42; --text-secondary:#686884; --text-tertiary:#9999b0;
+}
+[data-theme="light"] body{background:#f0ede6;}
+[data-theme="light"] .bg-bloom{opacity:.4;}
+[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
+
+/* Background */
+.bg-stage{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-bloom{position:absolute;left:50%;top:50%;width:1200px;height:1200px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(40,50,110,.32),rgba(20,22,60,.15) 40%,transparent 70%);filter:blur(60px);}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);opacity:.5;}
+
+/* Header */
+.header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;background:rgba(8,8,16,.6);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border);}
+[data-theme="light"] .header{background:rgba(240,236,225,.8);}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(240,165,0,.18),rgba(59,126,255,.18));border:1px solid rgba(255,255,255,.09);overflow:hidden;}
+.brand-mark img{width:22px;height:22px;object-fit:contain;}
+.brand-name{font-size:13px;font-weight:600;color:var(--text-primary);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.hbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:8px;border:1px solid transparent;color:var(--text-secondary);font-size:12px;font-weight:500;transition:color var(--tf),background var(--tf),border-color var(--tf);}
+.hbtn:hover{color:var(--text-primary);background:rgba(255,255,255,.04);border-color:var(--glass-border);}
+[data-theme="light"] .hbtn:hover{background:rgba(0,0,0,.04);}
+
+/* Page */
+.page{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:36px 28px 60px;}
+.page-head{margin-bottom:32px;}
+.page-title{font-size:28px;font-weight:700;color:var(--text-primary);letter-spacing:-.03em;line-height:1.1;}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-top:6px;}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#10d97a;box-shadow:0 0 6px #10d97a;margin-right:6px;animation:pulse-soft 1.8s ease-in-out infinite;vertical-align:middle;}
+@keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Alert banner */
+.alert-banner{display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.22);border-radius:var(--radius-md);margin-bottom:24px;animation:fade-slide 400ms both;}
+@keyframes fade-slide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.alert-banner.warning{background:rgba(240,165,0,.07);border-color:rgba(240,165,0,.2);}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;box-shadow:0 0 7px currentColor;}
+.alert-items{flex:1;font-size:12px;color:var(--text-body);display:flex;flex-wrap:wrap;gap:12px;}
+.alert-item{display:flex;align-items:center;gap:6px;}
+.alert-badge{padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+
+/* Dept sections */
+.depts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:720px){.depts-grid{grid-template-columns:1fr;}}
+
+.dept-section{background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-xl);overflow:hidden;transition:border-color var(--t),box-shadow var(--t);}
+.dept-section:hover{border-color:var(--glass-border-strong);box-shadow:0 8px 32px -8px rgba(0,0,0,.4);}
+.dept-top-bar{height:3px;}
+.dept-header{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px;}
+.dept-name{font-size:15px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+.dept-dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 10px currentColor;}
+.dept-tag{font-size:10px;color:var(--text-secondary);letter-spacing:.1em;text-transform:uppercase;}
+.dept-go-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:11.5px;font-weight:500;border:1px solid var(--glass-border);color:var(--text-secondary);transition:color var(--tf),background var(--tf),border-color var(--tf);}
+.dept-go-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.04);border-color:var(--glass-border-strong);}
+[data-theme="light"] .dept-go-btn:hover{background:rgba(0,0,0,.04);}
+
+.dept-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 20px 20px;}
+.ov-stat{padding:14px 14px 12px;background:rgba(255,255,255,.018);border:1px solid var(--glass-border);border-radius:var(--radius-md);cursor:pointer;transition:background var(--tf),border-color var(--tf),transform var(--t);}
+.ov-stat:hover{background:rgba(255,255,255,.04);border-color:var(--glass-border-strong);transform:translateY(-1px);}
+[data-theme="light"] .ov-stat{background:rgba(255,255,255,.5);}
+[data-theme="light"] .ov-stat:hover{background:rgba(255,255,255,.8);}
+.ov-stat-num{font-size:24px;font-weight:600;letter-spacing:-.025em;color:var(--text-primary);line-height:1.1;}
+.ov-stat-lbl{font-size:10px;color:var(--text-secondary);margin-top:3px;letter-spacing:.04em;text-transform:uppercase;}
+.ov-stat.alert-stat{border-color:rgba(255,107,107,.25);background:rgba(255,107,107,.04);}
+.ov-stat.warn-stat{border-color:rgba(240,165,0,.25);background:rgba(240,165,0,.04);}
+
+/* Briefing strip */
+.briefing-strip{background:var(--glass-fill);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:16px 22px;margin-bottom:24px;position:relative;overflow:hidden;}
+.briefing-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#3b7eff,#10d97a,#f0a500,#a855f7);}
+.bs-head{font-size:10px;color:var(--text-secondary);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;}
+.bs-text{font-size:12.5px;color:var(--text-body);line-height:1.55;}
+.bs-text.loading{color:var(--text-tertiary);font-style:italic;}
+
+/* Last-updated */
+.meta-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.meta-label{font-size:11px;color:var(--text-tertiary);}
+#ov-updated{font-size:10px;color:var(--text-tertiary);}
+  </style>
+</head>
+<body>
+
+<div class="bg-stage" aria-hidden="true">
+  <div class="bg-bloom"></div>
+  <div class="bg-grid"></div>
+</div>
+
+<header class="header">
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="/static/amt_logo.webp" alt="AMT"
+           onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\'font-weight:700;color:#f0a500;font-size:11px\'>AMT</span>'" />
+    </div>
+    <div>
+      <div class="brand-name">AMT AI — Executive Overview</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="hbtn" onclick="window.location.href='/'">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg>
+      Back to AI Chat
+    </button>
+    <button class="hbtn" onclick="window.location.href='/insights'">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Insights
+    </button>
+    <button class="hbtn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme"></button>
+  </div>
+</header>
+
+<div class="page">
+  <div class="page-head">
+    <div class="page-title">
+      <span class="live-dot"></span>Operations Dashboard
+    </div>
+    <div class="page-sub">Live KPIs across all 4 departments &mdash; refreshes every 30 seconds</div>
+  </div>
+
+  <div class="briefing-strip">
+    <div class="bs-head">AI Morning Briefing</div>
+    <div class="bs-text loading" id="ov-briefing">Loading…</div>
+  </div>
+
+  <div id="alert-area"></div>
+
+  <div class="meta-row">
+    <span class="meta-label">All departments live</span>
+    <span id="ov-updated"></span>
+  </div>
+
+  <div class="depts-grid" id="depts-grid">
+    <div style="grid-column:span 2;text-align:center;padding:48px;color:var(--text-tertiary)">Loading live metrics…</div>
+  </div>
+</div>
+
+<script>
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const DEPTS_CFG = [
+  {
+    id: 'sales', label: 'Sales', color: '#3b7eff', desc: 'Quotes & Proposals',
+    stats: s => [
+      { label:'Products', value: s.sales.products, class:'' },
+      { label:'Active Orders', value: s.sales.orders_active, class:'' },
+      { label:'Brands in Stock', value: s.sales.brands_in_stock, class:'' },
+      { label:'Top Brand', value: s.sales.top_brand, class:'', text:true },
+    ]
+  },
+  {
+    id: 'distribution', label: 'Distribution', color: '#10d97a', desc: 'Shipments & Inventory',
+    stats: s => [
+      { label:'In Transit', value: s.distribution.in_transit, class:'' },
+      { label:'Delayed / Held', value: s.distribution.delayed, class: s.distribution.delayed > 0 ? 'alert-stat' : '' },
+      { label:'Low Stock SKUs', value: s.distribution.low_stock, class: s.distribution.low_stock > 5 ? 'warn-stat' : '' },
+      { label:'Customs Holds', value: 1, class:'warn-stat' },
+    ]
+  },
+  {
+    id: 'finance', label: 'Finance', color: '#f0a500', desc: 'Invoices & Revenue',
+    stats: s => [
+      { label:'Overdue Invoices', value: s.finance.overdue, class: s.finance.overdue > 0 ? 'warn-stat' : '' },
+      { label:'Unpaid', value: s.finance.unpaid, class:'' },
+      { label:'Outstanding (AED)', value: Math.round(s.finance.outstanding_aed/1000)+'K', class: s.finance.outstanding_aed > 50000 ? 'warn-stat' : '', text:true },
+      { label:'Paid Invoices', value: s.finance.paid, class:'' },
+    ]
+  },
+  {
+    id: 'service', label: 'Service', color: '#a855f7', desc: 'Repairs & Tickets',
+    stats: s => [
+      { label:'Open Tickets', value: s.service.open, class: s.service.open > 3 ? 'warn-stat' : '' },
+      { label:'In Repair', value: s.service.in_repair, class:'' },
+      { label:'Ready to Collect', value: s.service.ready, class:'' },
+      { label:'SLA at Risk', value: Math.max(0, s.service.in_repair - 1), class: s.service.in_repair > 1 ? 'alert-stat' : '' },
+    ]
+  },
+];
+
+let _lastUpdated = 0;
+
+async function loadOverview() {
+  try {
+    const [sr, br] = await Promise.all([fetch('/api/stats'), fetch('/api/briefing')]);
+    const stats = await sr.json();
+    const briefData = await br.json();
+    _lastUpdated = Date.now();
+
+    document.getElementById('ov-briefing').classList.remove('loading');
+    document.getElementById('ov-briefing').textContent = briefData.briefing || 'All systems operational.';
+
+    renderAlerts(stats);
+    renderDepts(stats);
+    updateTimestamp();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('ov-briefing').textContent = 'Unable to load.';
+  }
+}
+
+function renderAlerts(s) {
+  const alerts = [];
+  if (s.distribution.delayed > 0) alerts.push({ text: `${s.distribution.delayed} shipment${s.distribution.delayed > 1 ? 's' : ''} delayed or at customs`, color:'#ff6b6b', cls:'alert-stat' });
+  if (s.finance.overdue > 0) alerts.push({ text:`${s.finance.overdue} overdue invoice${s.finance.overdue > 1 ? 's' : ''} — AED ${Math.round(s.finance.outstanding_aed/1000)}K outstanding`, color:'#f0a500', cls:'warn-stat' });
+  if (s.service.open > 2) alerts.push({ text:`${s.service.open} open service tickets`, color:'#a855f7', cls:'' });
+
+  const area = document.getElementById('alert-area');
+  if (!alerts.length) { area.innerHTML = ''; return; }
+  area.innerHTML = `
+    <div class="alert-banner warning">
+      <div class="alert-dot" style="color:#f0a500"></div>
+      <div class="alert-items">
+        ${alerts.map(a => `<span class="alert-item"><span style="font-size:11px;color:${a.color}">${esc(a.text)}</span></span>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderDepts(stats) {
+  const grid = document.getElementById('depts-grid');
+  grid.innerHTML = DEPTS_CFG.map(d => {
+    const cards = d.stats(stats);
+    return `
+      <div class="dept-section">
+        <div class="dept-top-bar" style="background:${d.color}"></div>
+        <div class="dept-header">
+          <div>
+            <div class="dept-name">
+              <span class="dept-dot" style="color:${d.color};background:${d.color}"></span>
+              ${esc(d.label)}
+            </div>
+            <div class="dept-tag">${esc(d.desc)}</div>
+          </div>
+          <button class="dept-go-btn" onclick="goToChat('${d.id}')">
+            Open AI Chat
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="dept-stats">
+          ${cards.map(c => `
+            <div class="ov-stat ${c.class}">
+              <div class="ov-stat-num" style="${c.class === 'alert-stat' ? 'color:#ff6b6b' : c.class === 'warn-stat' ? 'color:#f0a500' : 'color:var(--text-primary)'}">
+                ${c.text ? `<span style="font-size:16px">${esc(String(c.value))}</span>` : esc(String(c.value))}
+              </div>
+              <div class="ov-stat-lbl">${esc(c.label)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function goToChat(dept) {
+  sessionStorage.setItem('amt_dept', dept);
+  window.location.href = '/';
+}
+
+function updateTimestamp() {
+  const el = document.getElementById('ov-updated');
+  if (!el || !_lastUpdated) return;
+  const secs = Math.round((Date.now() - _lastUpdated) / 1000);
+  if (secs < 8) el.textContent = 'Updated just now';
+  else if (secs < 60) el.textContent = `Updated ${secs}s ago`;
+  else el.textContent = `Updated ${Math.round(secs/60)}m ago`;
+}
+
+// Theme
+function toggleTheme() {
+  const root = document.getElementById('html-root');
+  const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+  if (next === 'light') root.dataset.theme = 'light'; else delete root.dataset.theme;
+  localStorage.setItem('amt-theme', next);
+  updateThemeBtn(next);
+}
+function updateThemeBtn(t) {
+  const btn = document.getElementById('theme-btn');
+  if (!btn) return;
+  btn.innerHTML = t === 'light'
+    ? '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+  btn.title = t === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('amt-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  updateThemeBtn(saved);
+  loadOverview();
+  setInterval(loadOverview, 30000);
+  setInterval(updateTimestamp, 10000);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') window.location.href = '/';
+  });
+});
+</script>
+</body>
+</html>

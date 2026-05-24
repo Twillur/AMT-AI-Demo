@@ -124,6 +124,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/overview")
+@login_required
+def overview():
+    return render_template("overview.html")
+
+
 @app.route("/api/chat", methods=["POST"])
 @login_required
 def chat():
