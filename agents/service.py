@@ -320,6 +320,7 @@ TOOL SELECTION RULES:
 - "tickets for [customer]" → get_ticket_by_customer
 - "log ticket" / "new repair" / "customer brought in" → create_service_ticket
 - "open tickets" / "ticket status" / "all repairs" → get_service_tickets
+- "out of warranty" products / "expired warranty" / "how many warranties" → check_warranty() with no filters, then count expired ones (warranty_status = 'Out of Warranty')
 
 For customer emails always include: issue summary, current status, next steps, estimated completion. Sign off as "AMT Service Team"."""
 
