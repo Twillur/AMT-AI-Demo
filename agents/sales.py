@@ -81,6 +81,43 @@ TOOLS = [
                 "required": ["product"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_out_of_stock",
+            "description": "Returns all products that are currently out of stock (zero available units). Use for questions like 'which products are out of stock?' or 'what do we not have available?'",
+            "parameters": {"type": "object", "properties": {}, "required": []}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_all_orders",
+            "description": "Get ALL sales orders including delivered and historical ones. Use this for aggregate questions: average order value, total revenue, order counts, historical analysis. Pass status_filter='delivered' to see completed orders only, or leave blank for everything.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status_filter": {"type": "string", "description": "Optional: 'pending','confirmed','shipped','delivered','all' (default: all statuses)"}
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_order_analytics",
+            "description": "Aggregated sales analytics. Use for: 'which customer ordered most', 'which brand sells most', 'average order value', 'top products by sales', 'inactive customers'. Set metric to: 'customers' (order counts per customer), 'brands' (units sold per brand from order line items), 'products' (top selling products by qty), 'avg_value' (average order value), 'inactive_customers' (customers with no orders in 90+ days).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "metric": {"type": "string", "description": "One of: customers, brands, products, avg_value, inactive_customers"},
+                    "limit": {"type": "integer", "description": "Number of results (default 10)"}
+                },
+                "required": ["metric"]
+            }
+        }
     }
 ]
 
@@ -154,23 +191,117 @@ def get_stock_level(product: str) -> list:
     """, tuple(params))
 
 
+def get_out_of_stock() -> list:
+    trace.log("get_out_of_stock", "SQLite", "Products with zero available stock")
+    return query("""
+        SELECT p.sku, p.brand, p.model, p.category, p.price_aed,
+               COALESCE(SUM(i.qty_on_hand - i.qty_reserved), 0) AS qty_available
+        FROM products p
+        LEFT JOIN inventory i ON i.product_id = p.id
+        WHERE p.is_active = 1
+        GROUP BY p.id
+        HAVING qty_available <= 0
+        ORDER BY p.brand, p.model
+    """)
+
+
+def get_all_orders(status_filter: str = "all") -> list:
+    trace.log("get_all_orders", "SQLite", f"All orders — filter: '{status_filter}'")
+    if status_filter in ("pending", "confirmed", "shipped", "delivered", "cancelled"):
+        return query("""
+            SELECT o.order_ref, c.name AS customer, c.company, c.country,
+                   o.order_date, o.status, o.total_aed, o.sales_rep
+            FROM orders o JOIN customers c ON c.id = o.customer_id
+            WHERE o.status = ?
+            ORDER BY o.order_date DESC
+        """, (status_filter,))
+    return query("""
+        SELECT o.order_ref, c.name AS customer, c.company, c.country,
+               o.order_date, o.status, o.total_aed, o.sales_rep
+        FROM orders o JOIN customers c ON c.id = o.customer_id
+        ORDER BY o.order_date DESC
+    """)
+
+
+def get_order_analytics(metric: str, limit: int = 10) -> list:
+    trace.log("get_order_analytics", "SQLite", f"Analytics: {metric}")
+    if metric == "customers":
+        return query("""
+            SELECT c.name, c.company, c.country,
+                   COUNT(o.id) AS total_orders,
+                   ROUND(SUM(o.total_aed), 0) AS total_value_aed,
+                   ROUND(AVG(o.total_aed), 0) AS avg_order_aed,
+                   MAX(o.order_date) AS last_order_date
+            FROM orders o JOIN customers c ON c.id = o.customer_id
+            GROUP BY c.id ORDER BY total_orders DESC LIMIT ?
+        """, (limit,))
+    if metric == "brands":
+        return query("""
+            SELECT p.brand,
+                   COUNT(oi.id) AS line_items,
+                   SUM(oi.qty) AS total_units_sold,
+                   ROUND(SUM(oi.qty * oi.unit_price_aed), 0) AS total_value_aed
+            FROM order_items oi JOIN products p ON p.id = oi.product_id
+            GROUP BY p.brand ORDER BY total_units_sold DESC LIMIT ?
+        """, (limit,))
+    if metric == "products":
+        return query("""
+            SELECT p.brand, p.model, p.category,
+                   COUNT(oi.id) AS times_ordered,
+                   SUM(oi.qty) AS total_units_sold,
+                   ROUND(SUM(oi.qty * oi.unit_price_aed), 0) AS total_value_aed
+            FROM order_items oi JOIN products p ON p.id = oi.product_id
+            GROUP BY p.id ORDER BY total_units_sold DESC LIMIT ?
+        """, (limit,))
+    if metric == "avg_value":
+        return query("""
+            SELECT COUNT(*) AS total_orders,
+                   ROUND(AVG(total_aed), 0) AS avg_order_value_aed,
+                   ROUND(MIN(total_aed), 0) AS min_aed,
+                   ROUND(MAX(total_aed), 0) AS max_aed,
+                   ROUND(SUM(total_aed), 0) AS total_revenue_aed
+            FROM orders
+        """)
+    if metric == "inactive_customers":
+        return query("""
+            SELECT c.name, c.company, c.country,
+                   MAX(o.order_date) AS last_order_date,
+                   COUNT(o.id) AS total_orders_ever
+            FROM customers c
+            LEFT JOIN orders o ON o.customer_id = c.id
+            GROUP BY c.id
+            HAVING last_order_date < date('now', '-90 days') OR last_order_date IS NULL
+            ORDER BY last_order_date ASC
+        """)
+    return []
+
+
 TOOL_MAP = {
     "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
     "search_products": search_products,
     "get_customer_orders": get_customer_orders,
     "get_active_orders": get_active_orders,
     "get_stock_level": get_stock_level,
+    "get_out_of_stock": get_out_of_stock,
+    "get_all_orders": get_all_orders,
+    "get_order_analytics": get_order_analytics,
 }
 
-SYSTEM = """You are an AI sales assistant for Advanced Media Trading (AMT), the largest professional AV equipment distributor in MENA. AMT represents 100+ brands including DJI, Sony Professional, RED, ARRI, Zeiss, Sennheiser, Profoto, Atomos, and Teradek.
+SYSTEM = """You are an AI sales assistant for Advanced Media Trading (AMT), the largest professional AV equipment distributor in MENA. AMT represents brands including DJI, Sony, RED, ARRI, Zeiss, Sennheiser, Profoto, Atomos, Teradek, Blackmagic, SmallRig, Aputure, and Sachtler.
 
-You have access to AMT's live product catalog, inventory, and customer order history. Use semantic_catalog_search for broad product discovery, search_products for specific keyword/brand lookups, and get_stock_level to confirm availability.
+BRAND NAMES IN DATABASE: Use the short form — "Sony" (not "Sony Professional"), "DJI" (not "DJI Technologies"), "RED" (not "RED Digital Cinema"), "Blackmagic" (not "Blackmagic Design"). Always search with the short brand name.
 
-Your job:
-- Build detailed quotes and BOMs for client projects
-- Check stock availability before quoting
-- Recommend the right products based on budget and use case
-- Pull up customer history on request
+TOOL SELECTION RULES:
+- "out of stock" / "not available" / "zero stock" → get_out_of_stock
+- "which customer ordered most" / "top customers" / "order count" → get_order_analytics(metric="customers")
+- "which brand sells most" / "best-selling brand" / "top brand by sales" → get_order_analytics(metric="brands")
+- "top selling products" / "best selling products" / "most ordered products" → get_order_analytics(metric="products")
+- "average order value" / "avg order" → get_order_analytics(metric="avg_value")
+- "haven't ordered" / "inactive customers" / "no orders recently" → get_order_analytics(metric="inactive_customers")
+- "all orders" / "order history" / "total orders" including delivered → get_all_orders
+- Active/current orders (pending/confirmed/shipped) → get_active_orders
+- Specific customer's order history → get_customer_orders
+- Stock levels by brand/model/category → get_stock_level
 
 When building quotes, format as a clean markdown table: | Product | Brand | Model | Unit Price (AED) | Qty | Total (AED) |
 Always include a subtotal and 5% VAT line at the bottom. Be concise and professional."""

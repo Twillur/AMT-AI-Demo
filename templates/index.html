@@ -426,8 +426,8 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
 [data-theme="light"] .msg-copy-btn:hover{background:rgba(0,0,0,.07) !important;}
 
 /* ── Follow-up chips (post-AI response) ──────────────────────────────── */
-.followup-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-left:44px;}
-.followup-chip{padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);color:var(--text-tertiary);font-size:11px;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf),transform 180ms;white-space:nowrap;}
+.followup-chips{display:flex;flex-wrap:wrap;gap:6px;padding-left:40px;margin-top:-10px;}
+.followup-chip{padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);color:var(--text-tertiary);font-size:11px;cursor:pointer;transition:color var(--tf),background var(--tf),border-color var(--tf),transform 180ms;white-space:nowrap;flex-shrink:0;}
 .followup-chip::before{content:'↪ ';opacity:.45;}
 .followup-chip:hover{color:var(--text-primary);background:rgba(255,255,255,.06);border-color:var(--glass-border-strong);transform:translateY(-1px);}
 [data-theme="light"] .followup-chip{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.09);color:var(--text-secondary);}
@@ -1790,7 +1790,8 @@ function _renderFollowUps(msgDiv, dept, content) {
   const row = document.createElement('div');
   row.className = 'followup-chips';
   row.innerHTML = chips.map(c => `<button class="followup-chip" onclick="sendChip(${JSON.stringify(c.q).replace(/"/g,'&quot;')})">${esc(c.label)}</button>`).join('');
-  msgDiv.appendChild(row);
+  // Insert after the message div (sibling), not inside it, so bubble size never affects chip layout
+  msgDiv.insertAdjacentElement('afterend', row);
 }
 
 // ── Keyboard shortcuts modal ───────────────────────────────────────────

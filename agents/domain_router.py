@@ -7,22 +7,28 @@ _chroma = chromadb.PersistentClient(path="db/chroma")
 
 DOMAIN_DOCS = {
     "sales": (
-        "Show active customer orders, confirmed orders, pending orders from buyers, order status, order history. "
+        "Show customer orders, order history, what a specific customer has ordered, how much they bought, "
+        "their total order value, which customer ordered the most, best customers by order count. "
+        "Active orders, confirmed orders, pending orders, shipped orders, delivered orders, all order statuses. "
         "Build equipment quotes and BOMs for clients. Recommend cameras, drones, lenses, audio, lighting from "
-        "AMT's brand portfolio — DJI, Sony, RED, Profoto, Sennheiser, Zeiss, Atomos. Check available stock to sell. "
-        "Pull up what a customer has ordered before. Compare two products. "
-        "Find the right product for a use case or budget. Respond to quote requests."
+        "AMT's brand portfolio — DJI, Sony, RED, Profoto, Sennheiser, Zeiss, Atomos. "
+        "Check available stock, out of stock products, inventory availability. "
+        "Top selling products, best-selling brands, average order value, sales analytics. "
+        "Which customers haven't ordered recently. Find the right product for a use case or budget."
     ),
     "distribution": (
         "Track inbound shipments arriving from suppliers — not customer sales orders. "
         "Flag delays, customs holds, and late deliveries on inbound cargo. "
         "Check supplier purchase orders for procurement. Monitor warehouse inventory reorder thresholds. "
-        "Identify which supplier is behind on delivery schedule. Procurement, logistics, freight, ETA, carrier."
+        "Identify which supplier is behind on delivery schedule. Procurement, logistics, freight, ETA, carrier. "
+        "Low stock alerts, reorder emails, inventory levels, warehouse stock counts."
     ),
     "finance": (
-        "Manage invoices — which are paid, unpaid, or overdue. Calculate VAT for UAE 5%, Saudi Arabia 15%, "
-        "Egypt 14%. Show outstanding customer balances and receivables. Run aging reports. "
-        "Summarise total revenue and collection rate. Identify top debtors. Currency conversion for AED."
+        "Manage invoices — which invoices are paid, unpaid, or overdue. NOT order history — invoices only. "
+        "Calculate VAT for UAE 5%, Saudi Arabia 15%, Egypt 14%. "
+        "Show outstanding invoice balances and accounts receivable. Run aging reports on overdue invoices. "
+        "Summarise total revenue from invoices and collection rate. Identify top debtors by unpaid invoices. "
+        "Currency conversion for AED. Payment status, invoice due dates, overdue amounts."
     ),
     "service": (
         "Log, view, and update device repair tickets. Check warranty eligibility. Triage a technical fault. "
@@ -33,7 +39,7 @@ DOMAIN_DOCS = {
 
 
 def _get_or_build_collection():
-    col_name = "amt_domains_v2"
+    col_name = "amt_domains_v3"
     existing = [c.name for c in _chroma.list_collections()]
     if col_name in existing:
         return _chroma.get_collection(col_name)
