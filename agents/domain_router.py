@@ -81,7 +81,9 @@ _KEYWORD_RULES = [
     # Distribution — supplier POs and inbound logistics
     (["purchase order", "inbound shipment", "reorder email", "supplier",
       "customs hold", "eta", "cargo", "freight", "po-20",
-      "inventory value", "stock value", "value of inventory", "total inventory"], "distribution"),
+      "inventory value", "stock value", "value of inventory", "total inventory",
+      "value of all inventory", "inventory in stock", "inventory worth",
+      "total stock"], "distribution"),
     # Finance — invoices and payments
     (["invoice", "overdue", "accounts receivable", "vat", "aging report",
       "collection rate", "debtor", "unpaid", "payment status"], "finance"),
