@@ -122,6 +122,14 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_unordered_products",
+            "description": "Returns products that have never appeared in any customer order. Use for 'products we've never sold', 'products never ordered', 'products with no sales history'.",
+            "parameters": {"type": "object", "properties": {}, "required": []}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_order_analytics",
             "description": "Aggregated sales analytics. Use for: 'which customer ordered most', 'which brand sells most', 'average order value', 'top products by sales', 'inactive customers', 'which sales rep has most orders'. Set metric to: 'customers', 'brands', 'products', 'avg_value', 'inactive_customers', 'sales_reps'.",
             "parameters": {
@@ -216,6 +224,20 @@ def get_out_of_stock() -> list:
         WHERE p.is_active = 1
         GROUP BY p.id
         HAVING qty_available <= 0
+        ORDER BY p.brand, p.model
+    """)
+
+
+def get_unordered_products() -> list:
+    trace.log("get_unordered_products", "SQLite", "Products with no order history")
+    return query("""
+        SELECT p.sku, p.brand, p.model, p.category, p.price_aed,
+               COALESCE(SUM(i.qty_on_hand - i.qty_reserved), 0) AS qty_available
+        FROM products p
+        LEFT JOIN order_items oi ON oi.product_id = p.id
+        LEFT JOIN inventory i ON i.product_id = p.id
+        WHERE oi.id IS NULL AND p.is_active = 1
+        GROUP BY p.id
         ORDER BY p.brand, p.model
     """)
 
@@ -322,6 +344,7 @@ TOOL_MAP = {
     "get_customer_orders": get_customer_orders,
     "get_active_orders": get_active_orders,
     "get_stock_level": get_stock_level,
+    "get_unordered_products": get_unordered_products,
     "get_out_of_stock": get_out_of_stock,
     "get_low_stock": get_low_stock,
     "get_all_orders": get_all_orders,
@@ -342,6 +365,7 @@ TOOL SELECTION RULES:
 - "haven't ordered" / "inactive customers" / "no orders recently" → get_order_analytics(metric="inactive_customers")
 - "which sales rep" / "top sales rep" / "rep performance" → get_order_analytics(metric="sales_reps")
 - "orders from [country]" / "orders in UAE/Saudi/Egypt" → get_all_orders(country="[country]")
+- "never sold" / "never ordered" / "never shipped" / "no sales history" → get_unordered_products
 - "all orders" / "order history" / "total orders" including delivered → get_all_orders
 - Active/current orders (pending/confirmed/shipped) → get_active_orders
 - Specific customer's order history → get_customer_orders

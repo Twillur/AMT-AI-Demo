@@ -140,6 +140,14 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "get_ticket_stats",
+            "description": "Get summary statistics for service tickets: total count, count by status, average repair cost, total repair revenue. Use for 'average repair cost', 'how many tickets', 'repair stats summary'.",
+            "parameters": {"type": "object", "properties": {}, "required": []}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "check_warranty",
             "description": "Check warranty eligibility for a customer's product. Use when asked about warranty status, whether a device is in warranty, or warranty expiry.",
             "parameters": {
@@ -278,6 +286,26 @@ def update_ticket_status(ticket_ref: str, new_status: str, notes: str = None) ->
     return {"ticket_ref": ticket_ref, "new_status": new_status, "updated": True}
 
 
+def get_ticket_stats() -> dict:
+    trace.log("get_ticket_stats", "SQLite", "Service ticket statistics")
+    rows = query("""
+        SELECT
+            COUNT(*) AS total_tickets,
+            SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open_count,
+            SUM(CASE WHEN status='diagnosed' THEN 1 ELSE 0 END) AS diagnosed_count,
+            SUM(CASE WHEN status='in_repair' THEN 1 ELSE 0 END) AS in_repair_count,
+            SUM(CASE WHEN status='awaiting_parts' THEN 1 ELSE 0 END) AS awaiting_parts_count,
+            SUM(CASE WHEN status='ready' THEN 1 ELSE 0 END) AS ready_count,
+            SUM(CASE WHEN status='closed' THEN 1 ELSE 0 END) AS closed_count,
+            ROUND(AVG(CASE WHEN repair_cost_aed > 0 THEN repair_cost_aed END), 0) AS avg_repair_cost_aed,
+            ROUND(SUM(repair_cost_aed), 0) AS total_repair_revenue_aed,
+            SUM(CASE WHEN warranty_status='in_warranty' THEN 1 ELSE 0 END) AS in_warranty_count,
+            SUM(CASE WHEN warranty_status='out_of_warranty' THEN 1 ELSE 0 END) AS out_of_warranty_count
+        FROM service_tickets
+    """)
+    return rows[0] if rows else {}
+
+
 def check_warranty(customer_name: str = None, product_model: str = None) -> list:
     trace.log("check_warranty", "SQLite", f"Warranty check — customer: {customer_name or 'any'}, product: {product_model or 'any'}")
     sql = """
@@ -303,6 +331,7 @@ def check_warranty(customer_name: str = None, product_model: str = None) -> list
 
 TOOL_MAP = {
     "semantic_catalog_search": lambda query, top_k=5: lc_semantic_search(query, top_k),
+    "get_ticket_stats": get_ticket_stats,
     "get_service_tickets": get_service_tickets,
     "get_ticket_by_customer": get_ticket_by_customer,
     "create_service_ticket": create_service_ticket,
@@ -321,6 +350,7 @@ TOOL SELECTION RULES:
 - "log ticket" / "new repair" / "customer brought in" → create_service_ticket
 - "open tickets" / "ticket status" / "all repairs" → get_service_tickets
 - "out of warranty" products / "expired warranty" / "how many warranties" → check_warranty() with no filters, then count expired ones (warranty_status = 'Out of Warranty')
+- "average repair cost" / "repair stats" / "how many tickets" / "ticket summary" → get_ticket_stats
 
 For customer emails always include: issue summary, current status, next steps, estimated completion. Sign off as "AMT Service Team"."""
 
