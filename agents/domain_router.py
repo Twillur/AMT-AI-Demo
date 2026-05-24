@@ -22,9 +22,10 @@ DOMAIN_DOCS = {
         "Track inbound shipments arriving from suppliers — not customer sales orders. "
         "Shipments from DJI, Sony, RED, Profoto, Zeiss, Sennheiser, Atomos — supplier shipment tracking. "
         "Flag delays, customs holds, and late deliveries on inbound cargo. Overdue shipments past ETA. "
-        "Check supplier purchase orders for procurement. Monitor warehouse inventory reorder thresholds. "
-        "Identify which supplier is behind on delivery schedule. Procurement, logistics, freight, ETA, carrier. "
-        "Low stock alerts, reorder emails, inventory levels, warehouse stock counts."
+        "Purchase orders to suppliers — open POs, PO status, supplier procurement. NOT customer orders — supplier purchase orders only. "
+        "Draft and send reorder emails to suppliers when stock is low. Reorder, restock, replenishment requests. "
+        "Monitor warehouse inventory reorder thresholds. Identify which supplier is behind on delivery schedule. "
+        "Procurement, logistics, freight, ETA, carrier. Low stock alerts, inventory levels by category, warehouse stock counts."
     ),
     "finance": (
         "Manage invoices — which invoices are paid, unpaid, or overdue. NOT sales orders, NOT order history — invoices and payments only. "
@@ -42,7 +43,7 @@ DOMAIN_DOCS = {
 
 
 def _get_or_build_collection():
-    col_name = "amt_domains_v5"
+    col_name = "amt_domains_v6"
     existing = [c.name for c in _chroma.list_collections()]
     if col_name in existing:
         return _chroma.get_collection(col_name)
