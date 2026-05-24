@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chat History — AMT AI</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -143,6 +145,22 @@ button,input{font-family:inherit;color:inherit;background:none;border:none;outli
 .empty-desc{font-size:13px;line-height:1.55;}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── Light mode ── */
+[data-theme="light"]{--bg-base:#ede9df;--glass-fill:rgba(255,255,255,.68);--glass-fill-hover:rgba(255,255,255,.88);--glass-border:rgba(0,0,0,.08);--glass-border-strong:rgba(0,0,0,.14);--text-primary:#0e0e22;--text-body:#2b2b42;--text-secondary:#686884;--text-tertiary:#9898b2;}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] header{background:rgba(237,233,223,.92);border-bottom-color:rgba(0,0,0,.1);}
+[data-theme="light"] .bubble.user{background:linear-gradient(180deg,rgba(240,165,0,.2),rgba(240,165,0,.1));border-color:rgba(240,165,0,.3);color:#5a3800;}
+[data-theme="light"] .bubble.ai{background:rgba(255,255,255,.88);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .ai-content p,[data-theme="light"] .ai-content li{color:#333;}
+[data-theme="light"] .ai-content code{background:rgba(0,0,0,.07);color:#111;}
+[data-theme="light"] .sql-panel{background:rgba(235,232,222,.95);border-color:rgba(94,234,212,.25);}
+[data-theme="light"] .sql-panel-code{color:#222;}
+[data-theme="light"] .empty-state{color:var(--text-secondary);}
+[data-theme="light"] .empty-mark{background:rgba(255,255,255,.7);border-color:rgba(0,0,0,.09);}
+[data-theme="light"] .icon-btn:hover{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);}
+[data-theme="light"] *{scrollbar-color:rgba(0,0,0,.1) transparent;}
+[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </style>
 </head>
 <body>

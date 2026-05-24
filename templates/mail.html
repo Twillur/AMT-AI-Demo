@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inbox — AMT AI</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -153,6 +155,37 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
 .setup-banner code{font-family:ui-monospace,monospace;font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;color:var(--text-primary);}
 
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── Light mode ── */
+[data-theme="light"]{--bg-base:#ede9df;--glass-fill:rgba(255,255,255,.68);--glass-fill-hover:rgba(255,255,255,.88);--glass-border:rgba(0,0,0,.08);--glass-border-strong:rgba(0,0,0,.14);--text-primary:#0e0e22;--text-body:#2b2b42;--text-secondary:#686884;--text-tertiary:#9898b2;}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] .bg-bloom{opacity:.25;filter:blur(60px);}
+[data-theme="light"] .bg-grid{opacity:.12;background-image:linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px);}
+[data-theme="light"] .top-bar{background:rgba(237,233,223,.92);border-bottom-color:rgba(0,0,0,.1);}
+[data-theme="light"] .back-btn,.refine-btn{color:#686884;}
+[data-theme="light"] .back-btn:hover{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.1);color:#0e0e22;}
+[data-theme="light"] .mail-list{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.09);}
+[data-theme="light"] .mail-item{border-bottom-color:rgba(0,0,0,.06);}
+[data-theme="light"] .mail-item:hover,.mail-item.active{background:rgba(255,255,255,.8);}
+[data-theme="light"] .mail-from{color:#0e0e22;}
+[data-theme="light"] .mail-subject{color:#2b2b42;}
+[data-theme="light"] .mail-preview{color:#686884;}
+[data-theme="light"] .mail-pane{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.09);}
+[data-theme="light"] .pane-header{border-bottom-color:rgba(0,0,0,.08);}
+[data-theme="light"] .pane-from{color:#0e0e22;}
+[data-theme="light"] .pane-subject{color:#0e0e22;}
+[data-theme="light"] .pane-body{color:#2b2b42;}
+[data-theme="light"] .action-btn{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.1);color:#2b2b42;}
+[data-theme="light"] .action-btn:hover{background:rgba(0,0,0,.09);color:#0e0e22;}
+[data-theme="light"] .dept-badge{opacity:.9;}
+[data-theme="light"] .response-frame{background:rgba(255,255,255,.88);border-color:rgba(0,0,0,.1);}
+[data-theme="light"] .refine-input{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);color:#0e0e22;}
+[data-theme="light"] .refine-input:focus{border-color:rgba(240,165,0,.5);}
+[data-theme="light"] .refine-btn{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.1);}
+[data-theme="light"] .refine-btn:hover{background:rgba(0,0,0,.08);color:#0e0e22;}
+[data-theme="light"] .setup-banner{background:rgba(240,165,0,.06);border-color:rgba(240,165,0,.2);}
+[data-theme="light"] *{scrollbar-color:rgba(0,0,0,.1) transparent;}
+[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </style>
 </head>
 <body>

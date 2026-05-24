@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AMT AI Assistant</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -45,7 +46,7 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
 .app{position:relative;z-index:1;display:grid;grid-template-rows:64px 1fr;height:100vh;}
 
 /* Header */
-.header{display:flex;align-items:center;padding:0 22px;gap:20px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.55);backdrop-filter:blur(20px);height:64px;}
+.header{display:flex;align-items:center;padding:0 22px;gap:12px;border-bottom:1px solid var(--glass-border);background:rgba(8,8,16,.55);backdrop-filter:blur(20px);height:64px;}
 .header-side{display:flex;align-items:center;flex:1 1 0;min-width:0;}
 .header-side.right{justify-content:flex-end;gap:8px;}
 .brand{display:flex;align-items:center;gap:12px;min-width:0;}
@@ -423,7 +424,7 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
 <div class="app">
   <!-- Header -->
   <header class="header">
-    <div class="header-side">
+    <div class="header-side" style="gap:14px">
       <div class="brand">
         <div class="brand-mark">
           <img src="/static/amt_logo.webp" alt="AMT"
@@ -434,9 +435,9 @@ button,input,textarea{font-family:inherit;color:inherit;background:none;border:n
           <div class="brand-sub">Advanced Media Trading</div>
         </div>
       </div>
+      <nav class="dept-row" id="dept-row" aria-label="Department"></nav>
     </div>
-    <nav class="dept-row" id="dept-row" aria-label="Department"></nav>
-    <div class="header-side right" style="gap:8px">
+    <div class="header-side right" style="flex:0 0 auto;gap:8px">
       <div id="header-actions" style="display:flex;align-items:center;gap:8px"></div>
       <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode"></button>
     </div>

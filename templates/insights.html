@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Insights — AMT AI</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -107,6 +109,30 @@ header{display:flex;align-items:center;padding:0 22px;gap:16px;border-bottom:1px
 .chart-card:nth-child(3){animation-delay:100ms}.chart-card:nth-child(4){animation-delay:150ms}
 .chart-card:nth-child(5){animation-delay:200ms}.chart-card:nth-child(6){animation-delay:250ms}
 .chart-card:nth-child(7){animation-delay:300ms}.chart-card:nth-child(8){animation-delay:350ms}
+
+/* ── Light mode ── */
+[data-theme="light"]{--bg-base:#ede9df;--glass-fill:rgba(255,255,255,.68);--glass-fill-hover:rgba(255,255,255,.88);--glass-border:rgba(0,0,0,.08);--glass-border-strong:rgba(0,0,0,.14);--text-primary:#0e0e22;--text-body:#2b2b42;--text-secondary:#686884;--text-tertiary:#9898b2;}
+[data-theme="light"] body{background:var(--bg-base);}
+[data-theme="light"] .bloom{opacity:.25;filter:blur(60px);}
+[data-theme="light"] .grid-bg{opacity:.12;background-image:linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px);}
+[data-theme="light"] .top-bar{background:rgba(237,233,223,.92);border-bottom-color:rgba(0,0,0,.1);}
+[data-theme="light"] .back-btn{color:#686884;border-color:rgba(0,0,0,.1);}
+[data-theme="light"] .back-btn:hover{background:rgba(0,0,0,.05);color:#0e0e22;}
+[data-theme="light"] .chart-card{background:rgba(255,255,255,.8);border-color:rgba(0,0,0,.08);}
+[data-theme="light"] .chart-card:hover{background:rgba(255,255,255,.97);}
+[data-theme="light"] .card-title{color:#0e0e22;}
+[data-theme="light"] .low-stock-row{border-bottom-color:rgba(0,0,0,.06);}
+[data-theme="light"] .low-stock-name{color:#0e0e22;}
+[data-theme="light"] .bar-bg{background:rgba(0,0,0,.07);}
+[data-theme="light"] .modal-overlay{background:rgba(200,196,186,.7);}
+[data-theme="light"] .modal-box{background:#eeeadc;border-color:rgba(0,0,0,.12);}
+[data-theme="light"] .modal-table td{border-color:rgba(0,0,0,.06);color:#333;}
+[data-theme="light"] .modal-table th{color:#686884;}
+[data-theme="light"] .modal-close:hover{background:rgba(0,0,0,.06);}
+[data-theme="light"] .copy-btn{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.1);color:#0e0e22;}
+[data-theme="light"] .copy-btn:hover{background:rgba(0,0,0,.09);}
+[data-theme="light"] *{scrollbar-color:rgba(0,0,0,.1) transparent;}
+[data-theme="light"] *::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);}
   </style>
 </head>
 <body>

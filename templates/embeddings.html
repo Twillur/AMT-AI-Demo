@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AMT Vector Space — Product Embeddings</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <script>(function(){var t=localStorage.getItem('amt-theme');if(t==='light')document.documentElement.dataset.theme='light';})()</script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Space Grotesk', sans-serif; }
@@ -94,6 +96,29 @@
         }
         .stat-pill span { color: #9898b8; font-weight: 600; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Light mode ── */
+        [data-theme="light"] body { background:#ede9df; color:#0e0e22; }
+        [data-theme="light"] header { background:rgba(237,233,223,.95); border-bottom-color:rgba(0,0,0,.1); }
+        [data-theme="light"] .hdr-title { color:#0e0e22; }
+        [data-theme="light"] .hdr-sub { color:#686884; }
+        [data-theme="light"] #canvas-wrap { background-image:radial-gradient(circle,rgba(0,0,0,.08) 1px,transparent 1px); background-color:#ede9df; }
+        [data-theme="light"] #tooltip { background:rgba(255,255,255,.97); border-color:rgba(0,0,0,.12); box-shadow:0 8px 28px rgba(0,0,0,.15); }
+        [data-theme="light"] #tooltip .tt-brand { color:#686884; }
+        [data-theme="light"] #tooltip .tt-model { color:#0e0e22; }
+        [data-theme="light"] #tooltip .tt-desc { color:#7a7a9a; }
+        [data-theme="light"] #legend { background:rgba(240,236,225,.85); border-left-color:rgba(0,0,0,.08); }
+        [data-theme="light"] .legend-title { color:#9898b2; }
+        [data-theme="light"] .legend-label { color:#2b2b42; }
+        [data-theme="light"] .legend-count { color:#9898b2; }
+        [data-theme="light"] .legend-item:hover { background:rgba(0,0,0,.05); border-color:rgba(0,0,0,.1); }
+        [data-theme="light"] .info-box { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.08); }
+        [data-theme="light"] .info-box p { color:#686884; }
+        [data-theme="light"] .info-box strong { color:#2b2b42; }
+        [data-theme="light"] .stats-strip { background:rgba(237,233,223,.95); border-top-color:rgba(0,0,0,.08); }
+        [data-theme="light"] .stat-pill { border-color:rgba(0,0,0,.1); color:#686884; }
+        [data-theme="light"] .stat-pill span { color:#0e0e22; }
+        [data-theme="light"] .back-btn { color:#686884; }
     </style>
 </head>
 <body>

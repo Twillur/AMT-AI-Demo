@@ -1,23 +1,39 @@
-# AMT AI Assistant — Internal Demo
+# AMT AI Assistant
 
 > AI-powered department assistant for **Advanced Media Trading LLC** — the largest professional AV equipment distributor in MENA.
 
-Built as a live internal demo to show non-technical department heads exactly how AI can simplify their daily work. No buzzwords. No slides. Just real data, real queries, real answers.
+Built as a live internal demo showing non-technical department heads exactly how AI simplifies their daily work. No buzzwords. Real data, real queries, real answers.
+
+---
+
+## Screenshots
+
+### Dashboard
+![Dashboard](static/screenshots/dashboard.png)
+
+### Business Insights
+![Insights](static/screenshots/insights.png)
+
+### AI Domains Explorer
+![Domains](static/screenshots/domains.png)
+
+### Login
+![Login](static/screenshots/login.png)
 
 ---
 
 ## What It Does
 
-Four department-specific AI agents, each connected to a live SAP-aligned database of realistic AMT data:
+Four AI agents, each wired to a live SAP-aligned database of real AMT data:
 
-| Department | What the AI can do |
+| Department | What the AI handles |
 |---|---|
-| **Sales** | Build equipment quotes, check stock, pull customer order history, semantic product search |
-| **Distribution** | Track inbound shipments, monitor purchase orders, flag delays & customs holds, inventory levels |
-| **Finance** | Overdue invoices, revenue summaries, aging reports, customer balances, Pandas analytics |
-| **Service** | View open repair tickets, log new ones, update status, draft customer emails |
+| **Sales** | Build equipment quotes, check live stock, pull customer order history, semantic product search |
+| **Distribution** | Track inbound shipments, flag customs holds & delays, monitor POs, inventory levels, AI-drafted reorder emails |
+| **Finance** | Overdue invoices, revenue summaries, aging reports, customer balances, multi-country VAT (UAE 5% / KSA 15% / Egypt 14%) |
+| **Service** | View repair tickets, log new ones, update status, trigger automated customer email notifications via n8n |
 
-Every response is grounded in real data — the AI queries the database, it doesn't hallucinate.
+Every response is grounded in real database queries — the AI never hallucinates numbers.
 
 ---
 
@@ -25,15 +41,16 @@ Every response is grounded in real data — the AI queries the database, it does
 
 | Layer | Technology |
 |---|---|
-| **Orchestration** | LangGraph (StateGraph routing to department agents) |
+| **Orchestration** | LangGraph — StateGraph routes each message to the right department agent |
 | **LLM** | GPT-4o via OpenAI function calling |
-| **Semantic Search** | LlamaIndex + ChromaDB (40-product vector store) |
-| **Tool Dispatch** | LangChain StructuredTool |
-| **Financial Analysis** | Pandas (aging reports, payment rates, monthly trends) |
-| **Observability** | LangSmith (full trace of every agent run) |
+| **Semantic Search** | LlamaIndex + ChromaDB — 42-product vector store (1,536-dim embeddings) |
+| **Tool Dispatch** | LangChain StructuredTool wrappers |
+| **Financial Analysis** | Pandas — aging reports, payment rates, monthly revenue trends |
+| **Observability** | LangSmith — full trace of every agent run |
+| **Automation** | n8n — 5 live workflows, fires real Gmail emails on ticket events |
 | **Database** | SQLite — SAP SD/MM/FI/CS aligned schema (20+ tables) |
-| **Backend** | Python + Flask |
-| **Frontend** | Custom HTML/CSS/JS with per-department theming + live tool trace |
+| **Backend** | Python + Flask — session auth, login-protected routes |
+| **Frontend** | Custom HTML/CSS/JS — per-department theming, live tool trace panel, light/dark mode |
 
 ---
 
@@ -41,97 +58,105 @@ Every response is grounded in real data — the AI queries the database, it does
 
 ```
 AMT_Demo/
-├── app.py                      # Flask server, LangSmith init, session history
+├── app.py                       # Flask server — routes, auth, stats, briefing, LangSmith init
 ├── requirements.txt
-├── .env                        # API keys (not committed)
+├── .env.example                 # Copy to .env and fill in your keys
+├── start.bat                    # Double-click to launch (Windows)
 │
 ├── agents/
-│   ├── langgraph_flow.py       # LangGraph StateGraph router (entry point)
-│   ├── trace.py                # Thread-local tool trace (fires per request)
-│   ├── vector_store.py         # LlamaIndex + ChromaDB + LangChain StructuredTool
-│   ├── sales.py                # Product search, quote builder, order history
-│   ├── distribution.py         # Shipments, purchase orders, inventory
-│   ├── finance.py              # Invoices, revenue, Pandas financial reports
-│   └── service.py              # Ticket management, create/update, customer emails
+│   ├── langgraph_flow.py        # LangGraph StateGraph router (entry point for every message)
+│   ├── trace.py                 # Thread-local tool trace — fires per request
+│   ├── domains_config.py        # Single source of truth for domain metadata
+│   ├── reports.py               # HTML report generators (distribution briefing, finance overdue)
+│   ├── sales.py                 # Quote builder, product search, order history, RFQ handler
+│   ├── distribution.py          # Shipments, purchase orders, inventory, reorder
+│   ├── finance.py               # Invoices, revenue, Pandas aging reports
+│   ├── service.py               # Ticket CRUD, customer email drafting
+│   ├── vector_store.py          # LlamaIndex + ChromaDB semantic search
+│   ├── gmail_imap.py            # IMAP inbox fetch + Gmail send
+│   └── email_classifier.py      # Classify inbound emails by department
 │
 ├── db/
-│   ├── schema.sql              # SAP-aligned schema: branches, employees, suppliers,
-│   │                           #   products, inventory, customers, POs, orders,
-│   │                           #   invoices, service_tickets, warranties + more
-│   ├── seed.py                 # Full AMT data: 4 branches, 18 employees, 20 suppliers,
-│   │                           #   42 products, 15 customers, 12 orders, 12 invoices,
-│   │                           #   8 service tickets, 5 warranty registrations
-│   └── amt.db                  # Generated SQLite database (not committed)
+│   ├── schema.sql               # Full SAP-aligned schema: branches, employees, suppliers,
+│   │                            #   products, inventory, customers, POs, orders,
+│   │                            #   invoices, service_tickets, warranties + more
+│   ├── seed.py                  # Realistic AMT data — see Sample Data below
+│   └── chroma/                  # ChromaDB vector store (auto-generated)
 │
 ├── templates/
-│   └── index.html              # Chat UI: department switcher, tech stack bar,
-│                               #          per-message tool trace panel
-└── static/
-    └── amt_logo.webp
+│   ├── index.html               # Main chat UI — department switcher, tool trace, stats
+│   ├── insights.html            # Business Insights — 8 interactive charts with drill-down
+│   ├── mail.html                # Inbox — AI email triage + AI-generated reply drafts
+│   ├── domains.html             # AI Domains — agents, tools, table schema explorer
+│   ├── embeddings.html          # Vector Space — t-SNE 2D scatter of product embeddings
+│   ├── history.html             # Chat history with full tool trace
+│   └── login.html               # Session-based login (admin / 1234 by default)
+│
+├── static/
+│   ├── amt_logo.webp
+│   ├── favicon.svg
+│   └── screenshots/             # README screenshots
+│
+└── n8n_workflow_update.json     # Import into n8n for live ticket email automation
 ```
 
 ---
 
 ## Sample Data
 
-- **4 branches** — Dubai HQ, Al Quoz Warehouse+Service, Riyadh, Cairo
-- **18 employees** — real AMT leadership (Kaveh Farnam, Alaa Al Rantisi, Pooyan Farnam, etc.)
-- **20 suppliers** — DJI, Sony Professional, RED, ARRI, Zeiss, Profoto, Sennheiser, Atomos, Teradek, and more
-- **42 products** — with real HS codes, cost/sell prices, warranty periods
-- **15 customers** — MBC Group, ADNOC, Saudi Broadcasting Authority, Dubai Film Commission, OSN, etc.
-- **12 orders** across delivered, shipped, confirmed, and pending states
-- **12 invoices** — UAE 5% VAT / KSA 15% VAT / Egypt 14% VAT applied correctly
-- **5 inbound shipments** — including one on customs hold
-- **8 service tickets** — Dubai + Riyadh, across all repair stages
+| Entity | Count | Details |
+|---|---|---|
+| Branches | 4 | Dubai HQ, Al Quoz Warehouse+Service, Riyadh, Cairo |
+| Employees | 18 | Real AMT leadership (Kaveh Farnam, Alaa Al Rantisi, Pooyan Farnam, …) |
+| Suppliers | 20 | DJI, Sony Professional, RED, ARRI, Zeiss, Profoto, Sennheiser, Atomos, Teradek, … |
+| Products | 42 | Real HS codes, cost/sell prices, warranty periods |
+| Customers | 15 | MBC Group, ADNOC, Saudi Broadcasting Authority, Dubai Film Commission, OSN, … |
+| Orders | 12 | Across delivered, shipped, confirmed, pending states |
+| Invoices | 12 | UAE 5% / KSA 15% / Egypt 14% VAT applied correctly |
+| Shipments | 5 | Including one customs hold, two in transit |
+| Service Tickets | 8 | Dubai + Riyadh, across all repair stages |
 
 ---
 
 ## Getting Started
 
-**1. Clone the repo**
+**1. Clone**
 ```bash
 git clone https://github.com/Twillur/AMT-AI-Demo.git
 cd AMT-AI-Demo
 ```
 
-**2. Create a virtual environment**
+**2. Virtual environment**
 ```bash
 python -m venv venv
 venv\Scripts\activate        # Windows
 source venv/bin/activate     # Mac/Linux
 ```
 
-**3. Install dependencies**
+**3. Dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-**4. Set your API keys**
-
-Create a `.env` file in the root:
-```
-OPENAI_API_KEY=your_openai_key_here
-FLASK_SECRET_KEY=any-random-string
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_PROJECT=AMT-Demo
-LANGCHAIN_API_KEY=your_langsmith_key_here
-```
-
-**5. Seed the database**
+**4. API keys**
 ```bash
-python db/seed.py
+cp .env.example .env
+# Edit .env — add your OPENAI_API_KEY at minimum
 ```
 
-**6. Run**
+**5. Run**
 ```bash
 python app.py
+# or double-click start.bat on Windows
 ```
 
-Open `http://localhost:5000`
+Open `http://localhost:5000` — log in with `admin` / `1234`.
+
+> The database seeds itself automatically on first run. To reseed manually: `python db/seed.py`
 
 ---
 
-## Demo Queries to Try
+## Demo Queries
 
 **Sales**
 > "Give me a quote for a 4K cinema shoot kit under AED 80,000"
@@ -140,26 +165,41 @@ Open `http://localhost:5000`
 
 **Distribution**
 > "Show me all delayed or customs-held shipments"
-> "What purchase orders are currently open?"
 > "What items are running low on stock?"
+> "Draft a reorder email for our low DJI stock"
 
 **Finance**
 > "Show all overdue invoices"
-> "Run an aging report"
+> "Run a full aging report"
 > "What's our total revenue and collection rate for 2026?"
 
 **Service**
 > "Show me all open repair tickets"
 > "Log a new repair for Rami Yousef — DJI RS 4 Pro, motor overheating"
-> "Draft a customer update email for ticket SVC-2026-001"
+> "What's the status of ticket SVC-2026-001?"
+
+---
+
+## Key Features
+
+- **Login-protected** — session-based auth, all routes secured
+- **Live AI briefing** — GPT-4o-mini writes a 2-sentence morning briefing from live DB data every 10 min
+- **Notification bell** — alerts for overdue invoices, delayed shipments, open tickets (persists across pages)
+- **Insights charts** — 8 clickable Chart.js charts with row-level drill-down modals
+- **AI reorder emails** — GPT-4o-mini drafts supplier emails from live product + supplier DB data
+- **Vector Space** — interactive t-SNE scatter plot of all 42 product embeddings
+- **n8n automation** — ticket create/update fires real Gmail emails automatically
+- **Light / dark mode** — persists across all pages via localStorage
 
 ---
 
 ## Design Philosophy
 
 > *"Don't try to change the whole business. Make the individual person's daily tasks easier. Once daily tasks are easy, the convincing is done."*
+>
+> — Bilal, AMT
 
-This demo is intentionally personal and non-technical. Each department head sees a tool built for their exact workflow — not a generic AI chatbot.
+This demo is intentionally personal and non-technical. Each department head sees a tool built around their exact workflow — not a generic AI chatbot.
 
 ---
 
