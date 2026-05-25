@@ -199,7 +199,7 @@ Open `http://localhost:5000` — log in with `admin` / `1234`.
 
 > *"Don't try to change the whole business. Make the individual person's daily tasks easier. Once daily tasks are easy, the convincing is done."*
 >
-> — Bilal, AMT
+> — AMT
 
 This demo is intentionally personal and non-technical. Each department head sees a tool built around their exact workflow — not a generic AI chatbot.
 
